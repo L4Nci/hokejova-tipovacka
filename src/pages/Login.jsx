@@ -11,53 +11,53 @@ const Login = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    
     try {
       setLoading(true);
       setError(null);
       
-      // Odstranění mezer z emailu
-      const trimmedEmail = email.trim();
-
-      // Přímé přihlášení přes Supabase auth
-      const { data: { user }, error } = await supabase.auth.signInWithPassword({
-        email: trimmedEmail,
+      console.log('Začátek přihlašování...');
+      console.log('Supabase URL:', supabase.supabaseUrl);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
         password: password
       });
 
-      if (error) {
-        console.error('Auth Error:', error);
-        throw error;
+      console.log('Auth response:', {
+        success: !!data?.user,
+        error: error?.message,
+        errorDetails: error?.details,
+        status: error?.status
+      });
+
+      if (error) throw error;
+
+      if (!data?.user) {
+        throw new Error('Přihlášení selhalo - chybí data uživatele');
       }
 
-      if (!user) {
-        throw new Error('Přihlášení selhalo - uživatel není definován');
-      }
-
-      // Ověření existence profilu
-      const { data: profile, error: profileError } = await supabase
+      // Test načtení profilu
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('id', data.user.id)
         .single();
 
-      if (profileError) {
-        console.error('Profile Error:', profileError);
-        throw new Error('Chyba při načítání profilu');
-      }
+      console.log('Profile response:', {
+        success: !!profileData,
+        error: profileError?.message,
+        profile: profileData
+      });
 
-      if (!profile) {
-        throw new Error('Profil nenalezen');
+      if (profileError) {
+        throw new Error('Nepodařilo se načíst profil: ' + profileError.message);
       }
 
       navigate('/');
       
     } catch (error) {
-      console.error('Login Error:', error);
-      setError(error.message === 'Invalid login credentials' 
-        ? 'Nesprávný email nebo heslo'
-        : error.message || 'Při přihlášení došlo k chybě'
-      );
+      console.error('Login error:', error);
+      setError(error.message);
     } finally {
       setLoading(false);
     }
