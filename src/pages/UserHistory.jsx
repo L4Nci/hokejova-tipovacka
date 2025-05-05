@@ -15,10 +15,10 @@ const UserHistory = ({ user }) => {
   const fetchUserTips = async () => {
     try {
       setLoading(true);
-      setError(null);
-
-      // Načteme všechny zápasy a jejich výsledky
-      const { data: matchesData, error: matchesError } = await supabase
+      
+      console.log('Fetching matches with results...');
+      
+      const { data, error } = await supabase
         .from('matches')
         .select(`
           *,
@@ -27,30 +27,24 @@ const UserHistory = ({ user }) => {
             final_score_away
           ),
           tips (
-            id,
             score_home,
             score_away,
-            user_id,
             profiles (username)
           )
         `)
-        .order('match_time', { ascending: true }); // Změněno na ascending: true
-
-      if (matchesError) throw matchesError;
-
-      // Upravíme data pro zobrazení
-      const processedMatches = matchesData?.map(match => ({
-        ...match,
-        current_score_home: match.results?.[0]?.final_score_home || 0,
-        current_score_away: match.results?.[0]?.final_score_away || 0,
-        isFinished: new Date(match.match_time) < new Date()
-      })) || [];
-
-      setMatches(processedMatches);
+        .order('match_time', { ascending: false });
       
-    } catch (err) {
-      console.error('Error fetching matches:', err);
-      setError('Nepodařilo se načíst zápasy. Zkuste to prosím později.');
+      if (error) {
+        console.error('Error fetching matches:', error);
+        throw error;
+      }
+
+      console.log('Fetched matches:', data);
+      
+      setMatches(data || []);
+    } catch (error) {
+      console.error('Error:', error);
+      setError('Nepodařilo se načíst zápasy');
     } finally {
       setLoading(false);
     }
@@ -90,13 +84,16 @@ const UserHistory = ({ user }) => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Historie a přehled zápasů</h1>
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-6">Historie vašich tipů</h1>
       
-      <div className="space-y-6">
+      <div className="space-y-4">
         {matches.map((match) => (
-          <div key={match.id} className={`bg-white rounded-lg shadow p-6 
-            ${match.isFinished ? 'border-l-4 border-gray-500' : 'border-l-4 border-hockey-blue'}`}>
+          <div 
+            key={match.id}  // <-- Toto je důležité
+            className={`bg-white rounded-lg shadow p-6 
+              ${match.isFinished ? 'border-l-4 border-gray-500' : 'border-l-4 border-hockey-blue'}`}
+          >
             <div className="flex justify-between items-center mb-4">
               <span className="text-sm text-gray-600">{formatDateTime(match.match_time)}</span>
               <span className={`text-sm font-medium px-3 py-1 rounded-full 

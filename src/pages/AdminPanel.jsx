@@ -102,7 +102,8 @@ const AdminPanel = () => {
     try {
       setSavingResult(prev => ({ ...prev, [matchId]: true }));
       
-      const { error } = await supabase
+      // 1. Uložíme výsledek do results tabulky
+      const { error: resultError } = await supabase
         .from('results')
         .upsert({
           match_id: matchId,
@@ -112,9 +113,28 @@ const AdminPanel = () => {
           onConflict: 'match_id'
         });
 
-      if (error) throw error;
+      if (resultError) throw resultError;
+
+      // updated_at se aktualizuje automaticky díky triggeru
+      const { error: matchError } = await supabase
+        .from('matches')
+        .update({ 
+          is_finished: true,
+          final_score_home: results[matchId]?.homeScore || 0,
+          final_score_away: results[matchId]?.awayScore || 0
+        })
+        .eq('id', matchId);
+
+      if (matchError) throw matchError;
+
+      await fetchMatches();
+
     } catch (error) {
-      console.error('Chyba při ukládání výsledku:', error);
+      console.error('Error saving result:', error);
+      setErrors(prev => ({
+        ...prev,
+        [matchId]: `Chyba při ukládání: ${error.message}`
+      }));
     } finally {
       setSavingResult(prev => ({ ...prev, [matchId]: false }));
     }
