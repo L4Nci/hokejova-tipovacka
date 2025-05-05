@@ -152,3 +152,36 @@ BEGIN;
   -- Zapnout RLS
   ALTER TABLE public.tips ENABLE ROW LEVEL SECURITY;
 COMMIT;
+
+-- Check valid roles
+SELECT 
+  c.conname as constraint_name,
+  pg_get_constraintdef(c.oid) as constraint_definition
+FROM pg_constraint c
+JOIN pg_namespace n ON n.oid = c.connamespace
+JOIN pg_class t ON t.oid = c.conrelid
+WHERE t.relname = 'profiles' AND c.contype = 'c';
+
+-- Alter the role to use 'user' instead of 'tester'
+DO $$
+DECLARE
+  created_id UUID;
+BEGIN
+  -- Vložení nebo aktualizace testovacího profilu
+  WITH ins AS (
+    INSERT INTO public.profiles (id, username, role)
+    VALUES (
+      'd431168f-df4a-4597-8e9d-ab6b45c58517',
+      'Tester',
+      'user'  -- Changed from 'tester' to 'user'
+    )
+    ON CONFLICT (username) DO UPDATE 
+    SET role = 'user'
+    RETURNING id
+  )
+  SELECT id INTO created_id FROM ins;
+
+  -- Kontrolní výpis
+  RAISE NOTICE 'Vytvořen/aktualizován profil s ID: %', created_id;
+END;
+$$;

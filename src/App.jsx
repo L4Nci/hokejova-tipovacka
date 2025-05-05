@@ -1,28 +1,48 @@
+import { Routes, Route } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import MatchDetails from './pages/MatchDetails';
-import MatchHistory from './pages/MatchHistory';
+import UserHistory from './pages/UserHistory';
 import Leaderboard from './pages/Leaderboard';
 import AdminPanel from './pages/AdminPanel';
+import UserTips from './pages/UserTips';
+import AdminRoute from './components/AdminRoute';
 import './App.css';
 
 function App() {
   const [user, setUser] = useState(null);
+  const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const { data: { user: currentUser }, error } = await supabase.auth.getUser();
+        setLoading(true);
         
-        if (error) {
-          console.error('Error fetching user:', error);
-        } else {
-          setUser(currentUser);
+        // Get session first
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session Error:', sessionError);
+          return;
+        }
+
+        if (session?.user) {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+
+          if (profileError) {
+            console.error('Profile Error:', profileError);
+          } else {
+            setUserRole(profileData?.role);
+            setUser(session.user);
+          }
         }
       } catch (error) {
         console.error('Unexpected error:', error);
@@ -30,19 +50,15 @@ function App() {
         setLoading(false);
       }
     };
-    
+
     fetchUser();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null);
-      }
-    );
-    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
     return () => {
-      if (authListener && typeof authListener.subscription?.unsubscribe === 'function') {
-        authListener.subscription.unsubscribe();
-      }
+      subscription?.unsubscribe();
     };
   }, []);
 
@@ -60,9 +76,17 @@ function App() {
         <Route path="/" element={<Dashboard user={user} />} />
         <Route path="/login" element={<Login />} />
         <Route path="/match/:id" element={<MatchDetails />} />
-        <Route path="/history" element={<MatchHistory />} />
+        <Route path="/history" element={<UserHistory user={user} />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
-        <Route path="/admin" element={<AdminPanel />} />
+        <Route 
+          path="/admin" 
+          element={
+            <AdminRoute user={user} userRole={userRole}>
+              <AdminPanel />
+            </AdminRoute>
+          } 
+        />
+        <Route path="/tips" element={<UserTips user={user} />} />
       </Routes>
     </Layout>
   );

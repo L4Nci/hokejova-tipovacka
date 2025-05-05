@@ -66,6 +66,7 @@ const MatchDetails = () => {
             id,
             score_home,
             score_away,
+            user_id,
             profiles (
               username
             )
@@ -96,77 +97,84 @@ const MatchDetails = () => {
         throw new Error('Zadejte oba výsledky.');
       }
       
-      const scoreHome = parseInt(userTip.score_home);
-      const scoreAway = parseInt(userTip.score_away);
-      
-      if (isNaN(scoreHome) || isNaN(scoreAway) || scoreHome < 0 || scoreAway < 0) {
-        throw new Error('Výsledek musí být nezáporné číslo.');
-      }
-      
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
         throw new Error('Nejste přihlášeni.');
       }
       
-      if (matchHasEnded) {
-        throw new Error('Zápas již začal, tipy nelze změnit.');
+      if (!id) {
+        throw new Error('Neplatné ID zápasu.');
       }
       
+      const scoreHome = parseInt(userTip.score_home);
+      const scoreAway = parseInt(userTip.score_away);
+      
+      if (isNaN(scoreHome) || isNaN(scoreAway) || scoreHome < 0 || scoreAway < 0) {
+        throw new Error('Výsledek musí být nezáporné číslo.');
+      }
+
       const { data: existingTip, error: existingTipError } = await supabase
         .from('tips')
         .select('id')
         .eq('match_id', id)
         .eq('user_id', user.id)
         .single();
-      
+        
       if (existingTipError && existingTipError.code !== 'PGRST116') {
-        throw existingTipError;
+        console.error('Chyba při kontrole existujícího tipu:', existingTipError);
+        throw new Error('Nepodařilo se ověřit existující tip.');
       }
-      
+
+      let result;
       if (existingTip) {
-        const { error } = await supabase
+        result = await supabase
           .from('tips')
           .update({
             score_home: scoreHome,
             score_away: scoreAway,
-            updated_at: new Date()
+            updated_at: new Date().toISOString()
           })
           .eq('id', existingTip.id);
-        
-        if (error) throw error;
       } else {
-        const { error } = await supabase
+        result = await supabase
           .from('tips')
           .insert({
             user_id: user.id,
             match_id: id,
             score_home: scoreHome,
-            score_away: scoreAway,
-            created_at: new Date(),
-            updated_at: new Date()
+            score_away: scoreAway
           });
-        
-        if (error) throw error;
       }
-      
-      const { data: allTipsData } = await supabase
+
+      if (result.error) {
+        console.error('Chyba při ukládání tipu:', result.error);
+        throw new Error('Nepodařilo se uložit tip. ' + result.error.message);
+      }
+
+      const { data: updatedTips, error: tipsError } = await supabase
         .from('tips')
         .select(`
           id,
           score_home,
           score_away,
-          profiles (
-            username
-          )
+          user_id,
+          profiles (username)
         `)
         .eq('match_id', id);
-      
-      setAllTips(allTipsData || []);
+        
+      if (tipsError) {
+        console.error('Chyba při načítání aktualizovaných tipů:', tipsError);
+      } else {
+        setAllTips(updatedTips);
+      }
+
       setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+
     } catch (error) {
-      console.error('Error submitting tip:', error);
-      setError(error.message);
+      console.error('Chyba při zpracování tipu:', error);
+      setError(error.message || 'Nepodařilo se uložit tip.');
     } finally {
       setSubmitting(false);
     }
@@ -272,41 +280,26 @@ const MatchDetails = () => {
           )}
           
           <div className="bg-white shadow-md rounded p-6">
-            <h2 className="text-xl font-bold mb-4">Tipy ostatních</h2>
-            {matchHasEnded ? (
-              <div className="overflow-x-auto">
-                <table className="min-w-full bg-white">
-                  <thead>
-                    <tr>
-                      <th className="py-2 px-4 border-b">Uživatel</th>
-                      <th className="py-2 px-4 border-b">Tip</th>
-                      <th className="py-2 px-4 border-b">Body</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {allTips.map((tip) => (
-                      <tr key={tip.id}>
-                        <td className="py-2 px-4 border-b">{tip.profiles?.username}</td>
-                        <td className="py-2 px-4 border-b text-center">
-                          {tip.score_home} : {tip.score_away}
-                        </td>
-                        <td className="py-2 px-4 border-b text-center">
-                          {result && (
-                            <div className="inline-block bg-gray-100 px-2 py-1 rounded">
-                              -
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="text-center text-gray-600">
-                Tipy ostatních budou viditelné až po začátku zápasu.
-              </p>
-            )}
+            <h2 className="text-xl font-bold mb-4">Tipy</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {allTips.map((tip) => (
+                <div 
+                  key={tip.id}
+                  className={`p-4 rounded-lg border ${
+                    tip.user_id === user?.id 
+                      ? 'bg-blue-50 border-blue-200' 
+                      : 'bg-gray-50 border-gray-200'
+                  }`}
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">{tip.profiles?.username}</span>
+                    <div className="text-lg">
+                      {tip.score_home} : {tip.score_away}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}

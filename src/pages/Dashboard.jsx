@@ -11,18 +11,22 @@ const Dashboard = ({ user }) => {
       try {
         setLoading(true);
         
-        // Načtení nadcházejících zápasů (do týdne)
-        const currentDate = new Date().toISOString();
-        const oneWeekFromNow = new Date();
-        oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
-        
         const { data, error } = await supabase
           .from('matches')
-          .select('*')
-          .gt('match_time', currentDate)
-          .lt('match_time', oneWeekFromNow.toISOString())
-          .order('match_time', { ascending: true })
-          .limit(5);
+          .select(`
+            *,
+            tips (
+              id,
+              score_home,
+              score_away,
+              user:profiles (
+                username
+              )
+            )
+          `)
+          .gte('match_time', new Date().toISOString())
+          .order('match_time')
+          .limit(5);  // Zobrazí 5 nejbližších zápasů
         
         if (error) throw error;
         
@@ -33,7 +37,7 @@ const Dashboard = ({ user }) => {
         setLoading(false);
       }
     };
-    
+
     fetchMatches();
   }, []);
 
@@ -83,25 +87,46 @@ const Dashboard = ({ user }) => {
         ) : upcomingMatches.length === 0 ? (
           <p className="text-center text-gray-500">Žádné nadcházející zápasy</p>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {upcomingMatches.map(match => (
-              <div key={match.id} className="border-b pb-3 last:border-b-0">
-                <div className="text-sm text-gray-600 mb-1">{formatDateTime(match.match_time)}</div>
-                <div className="flex justify-between items-center">
+              <div key={match.id} className="border-b pb-4 last:border-b-0">
+                <div className="text-sm text-gray-600 mb-2">{formatDateTime(match.match_time)}</div>
+                <div className="flex justify-between items-center mb-3">
                   <div className="flex items-center">
                     {match.flag_home_url && (
-                      <img src={match.flag_home_url} alt={match.team_home} className="w-6 h-4 mr-2" />
+                      <img src={match.flag_home_url} alt={match.team_home} className="w-10 h-7 object-cover rounded shadow" />
                     )}
-                    <span>{match.team_home}</span>
+                    <span className="ml-2">{match.team_home}</span>
                   </div>
                   <div className="mx-2">vs</div>
                   <div className="flex items-center">
-                    <span>{match.team_away}</span>
+                    <span className="mr-2">{match.team_away}</span>
                     {match.flag_away_url && (
-                      <img src={match.flag_away_url} alt={match.team_away} className="w-6 h-4 ml-2" />
+                      <img src={match.flag_away_url} alt={match.team_away} className="w-10 h-7 object-cover rounded shadow" />
                     )}
                   </div>
                 </div>
+
+                {match.tips && match.tips.length > 0 ? (
+                  <div className="mt-2 bg-gray-50 p-3 rounded">
+                    <h3 className="text-sm font-semibold text-gray-600 mb-2">Tipy ostatních:</h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      {match.tips.map((tip) => (
+                        <div 
+                          key={tip.id} 
+                          className="flex justify-between text-sm py-1 px-2 rounded bg-white"
+                        >
+                          <span className="text-gray-600">{tip.user?.username}</span>
+                          <span className="font-medium">{tip.score_home}:{tip.score_away}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-2 text-sm text-gray-500 italic">
+                    Na tento zápas zatím nikdo netipoval
+                  </div>
+                )}
               </div>
             ))}
           </div>

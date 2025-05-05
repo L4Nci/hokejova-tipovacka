@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Link } from 'react-router-dom';
+import { MatchTipForm } from '../components/MatchTipForm';
 
 const UserTips = ({ user }) => {
   const [matches, setMatches] = useState([]);
@@ -10,6 +11,7 @@ const UserTips = ({ user }) => {
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState({});
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [error, setError] = useState(null);
 
   // Aktualizace aktuálního času každou sekundu pro odpočet
   useEffect(() => {
@@ -27,6 +29,7 @@ const UserTips = ({ user }) => {
   const fetchData = async () => {
     try {
       setLoading(true);
+      setError(null); // Reset error state
       
       // Načtení nadcházejících zápasů (do týdne)
       const currentDate = new Date().toISOString();
@@ -49,7 +52,11 @@ const UserTips = ({ user }) => {
           .select('*')
           .eq('user_id', user.id);
         
-        if (tipsError) throw tipsError;
+        if (tipsError) {
+          console.error('Chyba při načítání tipů:', tipsError);
+          setError('Nepodařilo se načíst tipy. Zkuste to prosím později.');
+          return;
+        }
         
         // Převedení tipů na objekt pro snazší přístup
         const tipsMap = {};
@@ -67,6 +74,7 @@ const UserTips = ({ user }) => {
       setMatches(matchesData || []);
     } catch (error) {
       console.error('Chyba při načítání dat:', error);
+      setError('Nepodařilo se načíst data. Zkuste to prosím později.');
     } finally {
       setLoading(false);
     }
@@ -212,6 +220,12 @@ const UserTips = ({ user }) => {
     <div>
       <h1 className="text-2xl font-bold mb-6">Tipy na nadcházející zápasy</h1>
       
+      {error && (
+        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded">
+          <p>{error}</p>
+        </div>
+      )}
+      
       {!user && (
         <div className="mb-6 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded">
           <p className="font-medium">Pro ukládání tipů je potřeba se přihlásit.</p>
@@ -220,88 +234,20 @@ const UserTips = ({ user }) => {
       )}
       
       <div className="grid gap-6 md:grid-cols-2">
-        {matches.map(match => {
-          const tipData = tips[match.id] || { scoreHome: 0, scoreAway: 0 };
-          const canTip = user && isTipTimeValid(match.match_time);
-          const remainingTime = formatRemainingTime(match.match_time);
-          
-          return (
-            <div key={match.id} className="border rounded-lg p-4 shadow-sm">
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-sm text-gray-600">{formatDateTime(match.match_time)}</span>
-                <span className="text-sm font-semibold text-gray-700">Skupina {match.group_name}</span>
-              </div>
-              
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center">
-                  {match.flag_home_url && (
-                    <img src={match.flag_home_url} alt={match.team_home} className="w-8 h-6 mr-2" />
-                  )}
-                  <span className="font-medium">{match.team_home}</span>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="number"
-                    min="0"
-                    max="99"
-                    value={tipData.scoreHome}
-                    onChange={(e) => handleTipChange(match.id, 'home', e.target.value)}
-                    disabled={!canTip}
-                    className="w-12 p-1 text-center border rounded"
-                  />
-                  <span className="text-xl">:</span>
-                  <input
-                    type="number"
-                    min="0"
-                    max="99"
-                    value={tipData.scoreAway}
-                    onChange={(e) => handleTipChange(match.id, 'away', e.target.value)}
-                    disabled={!canTip}
-                    className="w-12 p-1 text-center border rounded"
-                  />
-                </div>
-                
-                <div className="flex items-center">
-                  <span className="font-medium">{match.team_away}</span>
-                  {match.flag_away_url && (
-                    <img src={match.flag_away_url} alt={match.team_away} className="w-8 h-6 ml-2" />
-                  )}
-                </div>
-              </div>
-              
-              <div className="flex justify-between items-center mt-2">
-                <div className={`text-sm ${!canTip ? 'text-red-500 font-medium' : 'text-gray-500'}`}>
-                  {canTip ? `Zbývá: ${remainingTime}` : "Čas pro tipování vypršel"}
-                </div>
-                
-                <div className="flex items-center">
-                  {success[match.id] && (
-                    <div className="text-green-600 mr-3 text-sm flex items-center">
-                      <span className="mr-1">✓</span> Tip uložen
-                    </div>
-                  )}
-                  
-                  {canTip && (
-                    <button
-                      onClick={() => saveTip(match.id)}
-                      disabled={savingTip[match.id]}
-                      className="bg-hockey-blue text-white px-4 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      {savingTip[match.id] ? 'Ukládání...' : tipData.id ? 'Aktualizovat' : 'Uložit tip'}
-                    </button>
-                  )}
-                </div>
-              </div>
-              
-              {errors[match.id] && (
-                <div className="mt-2 text-sm text-red-600 bg-red-50 p-2 rounded">
-                  {errors[match.id]}
-                </div>
-              )}
+        {matches.map((match) => (
+          <div key={match.id} className="border rounded-lg p-4">
+            <div className="text-sm text-gray-600 mb-4">
+              {formatDateTime(match.match_time)}
             </div>
-          );
-        })}
+            
+            <MatchTipForm
+              match={match}
+              user={user}
+              existingTip={tips[match.id]}
+              onTipSaved={() => fetchData()}
+            />
+          </div>
+        ))}
       </div>
     </div>
   );

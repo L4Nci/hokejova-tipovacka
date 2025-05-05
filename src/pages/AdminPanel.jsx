@@ -82,25 +82,20 @@ const AdminPanel = () => {
   const saveResult = async (matchId) => {
     try {
       setSavingResult(prev => ({ ...prev, [matchId]: true }));
-      setErrors(prev => ({ ...prev, [matchId]: null }));
-      
-      const result = results[matchId] || { homeScore: 0, awayScore: 0 };
       
       const { error } = await supabase
         .from('results')
         .upsert({
           match_id: matchId,
-          final_score_home: result.homeScore,
-          final_score_away: result.awayScore
+          final_score_home: results[matchId]?.homeScore || 0,
+          final_score_away: results[matchId]?.awayScore || 0
         }, {
           onConflict: 'match_id'
         });
-      
+
       if (error) throw error;
-      
     } catch (error) {
       console.error('Chyba při ukládání výsledku:', error);
-      setErrors(prev => ({ ...prev, [matchId]: 'Nepodařilo se uložit výsledek.' }));
     } finally {
       setSavingResult(prev => ({ ...prev, [matchId]: false }));
     }

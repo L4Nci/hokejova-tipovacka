@@ -1,27 +1,16 @@
--- Reset hesla pro admin uživatele
-UPDATE auth.users
+-- Reset hesla pro admin účet
+UPDATE auth.users 
 SET 
-  encrypted_password = crypt('hovno', gen_salt('bf')),
-  updated_at = now()
-WHERE email = 'admin@example.com';
+  encrypted_password = crypt('admin123', gen_salt('bf')),
+  updated_at = now(),
+  email_confirmed_at = now()
+WHERE email = 'admin@ms2025.cz';
 
--- Výpis kontrolní zprávy
-DO $$
-DECLARE
-  user_exists BOOLEAN;
-BEGIN
-  SELECT EXISTS(SELECT 1 FROM auth.users WHERE email = 'admin@example.com') INTO user_exists;
-  
-  IF user_exists THEN
-    RAISE NOTICE 'Heslo pro admin@example.com bylo resetováno na "hovno"';
-  ELSE
-    RAISE NOTICE 'Uživatel admin@example.com nebyl nalezen!';
-  END IF;
-END;
-$$;
-
--- Výpis existujícího admin uživatele (pro kontrolu)
-SELECT u.id, u.email, p.username, p.role
-FROM auth.users u
-JOIN public.profiles p ON u.id = p.id
-WHERE u.email = 'admin@example.com';
+-- Ověření
+SELECT 
+  email,
+  email_confirmed_at,
+  confirmed_at,
+  last_sign_in_at
+FROM auth.users 
+WHERE email = 'admin@ms2025.cz';

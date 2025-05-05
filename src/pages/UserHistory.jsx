@@ -1,223 +1,150 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Link } from 'react-router-dom';
 
 const UserHistory = ({ user }) => {
-  const [tipHistory, setTipHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+  const [matches, setMatches] = useState([]);
+
   useEffect(() => {
     if (user) {
-      fetchUserTips(user.id);
-    } else {
-      setLoading(false);
+      fetchUserTips();
     }
   }, [user]);
-  
-  const fetchUserTips = async (userId) => {
+
+  const fetchUserTips = async () => {
     try {
       setLoading(true);
-      
-      // Získání tipů uživatele včetně souvisejících dat
-      const { data, error } = await supabase
-        .from('tips')
+      setError(null);
+
+      // Načteme všechny zápasy a jejich výsledky
+      const { data: matchesData, error: matchesError } = await supabase
+        .from('matches')
         .select(`
-          id,
-          score_home,
-          score_away,
-          created_at,
-          updated_at,
-          matches!inner (
-            id,
-            team_home,
-            team_away,
-            flag_home_url,
-            flag_away_url,
-            match_time,
-            group_name
+          *,
+          results (
+            final_score_home,
+            final_score_away
           ),
-          points (
-            points
+          tips (
+            id,
+            score_home,
+            score_away,
+            user_id,
+            profiles (username)
           )
         `)
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
+        .order('match_time', { ascending: true }); // Změněno na ascending: true
 
-      // Získání výsledků pro každý zápas
-      const matchIds = data.map(tip => tip.matches.id);
-      const { data: resultsData, error: resultsError } = await supabase
-        .from('results')
-        .select('*')
-        .in('match_id', matchIds);
-      
-      if (resultsError) throw resultsError;
+      if (matchesError) throw matchesError;
 
-      // Vytvoření mapy výsledků pro rychlý přístup
-      const resultsMap = {};
-      resultsData?.forEach(result => {
-        resultsMap[result.match_id] = {
-          final_score_home: result.final_score_home,
-          final_score_away: result.final_score_away
-        };
-      });
+      // Upravíme data pro zobrazení
+      const processedMatches = matchesData?.map(match => ({
+        ...match,
+        current_score_home: match.results?.[0]?.final_score_home || 0,
+        current_score_away: match.results?.[0]?.final_score_away || 0,
+        isFinished: new Date(match.match_time) < new Date()
+      })) || [];
 
-      // Zpracování dat pro zobrazení
-      const processedData = data.map(tip => ({
-        id: tip.id,
-        tipScoreHome: tip.score_home,
-        tipScoreAway: tip.score_away,
-        matchId: tip.matches.id,
-        teamHome: tip.matches.team_home,
-        teamAway: tip.matches.team_away,
-        flagHomeUrl: tip.matches.flag_home_url,
-        flagAwayUrl: tip.matches.flag_away_url,
-        matchTime: tip.matches.match_time,
-        groupName: tip.matches.group_name,
-        finalScoreHome: resultsMap[tip.matches.id]?.final_score_home,
-        finalScoreAway: resultsMap[tip.matches.id]?.final_score_away,
-        points: tip.points?.[0]?.points || 0,
-        createdAt: tip.created_at,
-        updatedAt: tip.updated_at,
-        // Přidáme informaci, zda je zápas v budoucnosti a zda lze ještě tipovat
-        isFuture: new Date(tip.matches.match_time) > new Date(),
-        canStillTip: new Date(tip.matches.match_time) > new Date(new Date().getTime() + 5 * 60000)
-      }));
+      setMatches(processedMatches);
       
-      setTipHistory(processedData);
     } catch (err) {
-      console.error('Chyba při načítání historie tipů:', err);
-      setError('Nepodařilo se načíst historii tipů.');
+      console.error('Error fetching matches:', err);
+      setError('Nepodařilo se načíst zápasy. Zkuste to prosím později.');
     } finally {
       setLoading(false);
     }
   };
-  
+
   const formatDateTime = (dateTimeStr) => {
     const date = new Date(dateTimeStr);
     return new Intl.DateTimeFormat('cs-CZ', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
     }).format(date);
   };
 
   if (loading) {
-    return <div className="text-center py-10">Načítání historie tipů...</div>;
-  }
-  
-  if (!user) {
     return (
-      <div className="text-center py-10">
-        <p className="text-lg mb-4">Pro zobrazení historie tipů se musíte přihlásit</p>
-        <Link to="/login" className="text-hockey-blue hover:underline">
-          Přejít na přihlášení
-        </Link>
+      <div className="flex justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-hockey-blue"></div>
       </div>
     );
   }
-  
+
   if (error) {
-    return <div className="text-center py-10 text-red-500">{error}</div>;
+    return (
+      <div className="text-center py-8 text-red-600">{error}</div>
+    );
   }
-  
-  if (tipHistory.length === 0) {
-    return <div className="text-center py-10">Zatím jste nezadali žádné tipy.</div>;
+
+  if (!matches.length) {
+    return (
+      <div className="text-center py-8">
+        <h2 className="text-xl font-semibold mb-2">Historie zápasů</h2>
+        <p className="text-gray-500">Zatím zde nejsou žádné odehrané zápasy s tipy.</p>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold mb-6">Historie mých tipů</h1>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-6">Historie a přehled zápasů</h1>
       
-      <div className="grid gap-6 md:grid-cols-2">
-        {tipHistory.map((tip) => (
-          <div key={tip.id} className={`border rounded-lg p-4 shadow-sm ${tip.isFuture ? 'bg-blue-50' : ''}`}>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-gray-600">{formatDateTime(tip.matchTime)}</span>
-              <span className="text-sm font-medium">Skupina {tip.groupName}</span>
+      <div className="space-y-6">
+        {matches.map((match) => (
+          <div key={match.id} className={`bg-white rounded-lg shadow p-6 
+            ${match.isFinished ? 'border-l-4 border-gray-500' : 'border-l-4 border-hockey-blue'}`}>
+            <div className="flex justify-between items-center mb-4">
+              <span className="text-sm text-gray-600">{formatDateTime(match.match_time)}</span>
+              <span className={`text-sm font-medium px-3 py-1 rounded-full 
+                ${match.isFinished ? 'bg-gray-100' : 'bg-blue-100'}`}>
+                {match.isFinished ? 'Odehráno' : 'Naplánováno'} • Skupina {match.group_name}
+              </span>
             </div>
-            
-            {tip.isFuture && tip.canStillTip && (
-              <div className="bg-green-100 text-green-700 px-2 py-1 rounded text-sm mb-3">
-                <Link to="/tips" className="flex items-center">
-                  <span>Můžete ještě upravit</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </Link>
-              </div>
-            )}
-            
-            {tip.isFuture && !tip.canStillTip && (
-              <div className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-sm mb-3">
-                Čas na úpravu vypršel
-              </div>
-            )}
             
             <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center">
-                {tip.flagHomeUrl && (
-                  <img src={tip.flagHomeUrl} alt={tip.teamHome} className="w-8 h-6 mr-2" />
-                )}
-                <span className="font-medium">{tip.teamHome}</span>
+              <div className="flex items-center gap-3">
+                <img 
+                  src={match.flag_home_url} 
+                  alt={match.team_home} 
+                  className="w-10 h-7 object-cover rounded shadow" 
+                />
+                <span className="font-medium">{match.team_home}</span>
               </div>
               
-              <div className="flex items-center space-x-2">
-                <div className="text-center">
-                  <div className="text-xs text-gray-500 mb-1">Váš tip</div>
-                  <div className="flex items-center">
-                    <span className="w-8 text-center font-medium">{tip.tipScoreHome}</span>
-                    <span className="mx-1">:</span>
-                    <span className="w-8 text-center font-medium">{tip.tipScoreAway}</span>
-                  </div>
-                </div>
-                
-                {(tip.finalScoreHome !== undefined && tip.finalScoreAway !== undefined) && (
-                  <div className="text-center ml-4">
-                    <div className="text-xs text-gray-500 mb-1">Výsledek</div>
-                    <div className="flex items-center">
-                      <span className="w-8 text-center font-bold">{tip.finalScoreHome}</span>
-                      <span className="mx-1">:</span>
-                      <span className="w-8 text-center font-bold">{tip.finalScoreAway}</span>
-                    </div>
-                  </div>
-                )}
+              <div className="px-6 py-2 bg-gray-50 rounded-lg text-xl font-bold">
+                {match.current_score_home} : {match.current_score_away}
               </div>
               
-              <div className="flex items-center">
-                <span className="font-medium">{tip.teamAway}</span>
-                {tip.flagAwayUrl && (
-                  <img src={tip.flagAwayUrl} alt={tip.teamAway} className="w-8 h-6 ml-2" />
-                )}
+              <div className="flex items-center gap-3">
+                <span className="font-medium">{match.team_away}</span>
+                <img 
+                  src={match.flag_away_url} 
+                  alt={match.team_away} 
+                  className="w-10 h-7 object-cover rounded shadow"
+                />
               </div>
             </div>
-            
-            {(tip.finalScoreHome !== undefined && tip.finalScoreAway !== undefined) ? (
-              <div className="flex justify-end">
-                <span className={`px-3 py-1 rounded-full ${tip.points > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                  {tip.points} {tip.points === 1 ? 'bod' : tip.points >= 2 && tip.points <= 4 ? 'body' : 'bodů'}
-                </span>
-              </div>
-            ) : tip.isFuture ? (
-              <div className="flex justify-end">
-                <span className="text-sm text-gray-500">Čeká se na zápas</span>
-              </div>
-            ) : (
-              <div className="flex justify-end">
-                <span className="text-sm text-gray-500">Čeká se na výsledek</span>
+
+            {match.tips && match.tips.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <h3 className="text-sm font-semibold text-gray-600 mb-3">
+                  Tipy ({match.tips.length})
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {match.tips.map((tip) => (
+                    <div key={tip.id} 
+                      className="p-2 rounded bg-gray-50 border border-gray-200 flex justify-between">
+                      <span className="text-sm">{tip.profiles.username}</span>
+                      <span className="font-medium">{tip.score_home}:{tip.score_away}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
-            
-            <div className="text-xs text-gray-400 mt-2">
-              Tip vytvořen: {formatDateTime(tip.createdAt)}
-              {tip.updatedAt !== tip.createdAt && (
-                <span className="ml-2">• Aktualizováno: {formatDateTime(tip.updatedAt)}</span>
-              )}
-            </div>
           </div>
         ))}
       </div>
