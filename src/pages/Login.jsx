@@ -1,170 +1,103 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [userPassword, setUserPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  console.log('Current location:', location.pathname);
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        console.log('User already logged in, redirecting...');
+        navigate('/dashboard');
+      }
+    };
+    
+    checkSession();
+  }, [navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    try {
-      setLoading(true);
-      setError(null);
-      
-      console.log('Začátek přihlašování...');
-      console.log('Supabase URL:', supabase.supabaseUrl);
-      
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password
-      });
+    const email = userEmail.trim();
+    const password = userPassword;
 
-      console.log('Auth response:', {
-        success: !!data?.user,
-        error: error?.message,
-        errorDetails: error?.details,
-        status: error?.status
-      });
-
-      if (error) throw error;
-
-      if (!data?.user) {
-        throw new Error('Přihlášení selhalo - chybí data uživatele');
-      }
-
-      // Test načtení profilu
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', data.user.id)
-        .single();
-
-      console.log('Profile response:', {
-        success: !!profileData,
-        error: profileError?.message,
-        profile: profileData
-      });
-
-      if (profileError) {
-        throw new Error('Nepodařilo se načíst profil: ' + profileError.message);
-      }
-
-      navigate('/');
-      
-    } catch (error) {
-      console.error('Login error:', error);
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResetPassword = async () => {
-    if (!email) {
-      setError('Pro reset hesla zadejte email');
+    if (!email || !password) {
+      setError("Email nebo heslo nejsou vyplněny");
       return;
     }
 
     try {
       setLoading(true);
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
-      if (error) throw error;
-      alert('Email pro reset hesla byl odeslán');
+      setError(null);
+
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email, 
+        password,
+      });
+
+      if (signInError) throw signInError;
+
+      console.log("Login successful, redirecting...");
+      navigate('/dashboard');
+
     } catch (error) {
-      setError('Nepodařilo se odeslat email pro reset hesla');
+      console.error("Auth error:", error);
+      setError('Nesprávný email nebo heslo');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-hockey-blue mb-2">
-            MS Hokej 2025
-          </h1>
-          <p className="text-gray-600">Přihlášení do tipovačky</p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+        <h2 className="text-2xl font-bold mb-6 text-center">Přihlášení</h2>
         
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded" role="alert">
-            <p className="font-medium">{error}</p>
+          <div className="mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700">
+            {error}
           </div>
         )}
-        
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
+
+        <form onSubmit={handleLogin}>
+          <div className="mb-4">
+            <label className="block text-gray-700 mb-2">Email</label>
             <input
-              id="email"
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={userEmail}
+              onChange={e => setUserEmail(e.target.value)}
+              className="w-full p-2 border rounded"
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-hockey-blue focus:border-transparent"
-              placeholder="vas@email.cz"
             />
           </div>
           
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-              Heslo
-            </label>
+          <div className="mb-6">
+            <label className="block text-gray-700 mb-2">Heslo</label>
             <input
-              id="password"
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={userPassword}
+              onChange={e => setUserPassword(e.target.value)}
+              className="w-full p-2 border rounded"
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-hockey-blue focus:border-transparent"
-              placeholder="••••••••"
             />
-          </div>
-          
-          <button
-            type="submit"
-            className="w-full bg-hockey-blue text-white py-2 rounded-md hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={loading}
-          >
-            {loading ? (
-              <span className="flex items-center justify-center">
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Přihlašování...
-              </span>
-            ) : 'Přihlásit se'}
-          </button>
-        </form>
-        
-        <div className="mt-6 flex flex-col space-y-4 text-center text-sm">
-          <button
-            onClick={handleResetPassword}
-            className="text-hockey-blue hover:text-blue-700 font-medium"
-            disabled={loading}
-          >
-            Zapomenuté heslo?
-          </button>
-          
-          <div className="text-gray-600">
-            Nemáte účet?{' '}
-            <Link to="/register" className="text-hockey-blue hover:text-blue-700 font-medium">
-              Zaregistrujte se
-            </Link>
           </div>
 
-          <Link to="/" className="text-gray-500 hover:text-gray-700">
-            Zpět na hlavní stránku
-          </Link>
-        </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:opacity-50"
+          >
+            {loading ? 'Přihlašování...' : 'Přihlásit se'}
+          </button>
+        </form>
       </div>
     </div>
   );

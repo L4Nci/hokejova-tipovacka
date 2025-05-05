@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import Layout from './components/Layout';
@@ -10,6 +10,7 @@ import Leaderboard from './pages/Leaderboard';
 import AdminPanel from './pages/AdminPanel';
 import UserTips from './pages/UserTips';
 import AdminRoute from './components/AdminRoute';
+import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
 function App() {
@@ -73,8 +74,22 @@ function App() {
   return (
     <Layout user={user}>
       <Routes>
-        <Route path="/" element={<Dashboard user={user} />} />
-        <Route path="/login" element={<Login />} />
+        {/* Public routes */}
+        <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
+        
+        {/* Protected routes */}
+        <Route 
+          path="/" 
+          element={user ? <Navigate to="/dashboard" /> : <Navigate to="/login" />} 
+        />
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute user={user}>
+              <Dashboard user={user} />
+            </ProtectedRoute>
+          } 
+        />
         <Route path="/match/:id" element={<MatchDetails />} />
         <Route path="/history" element={<UserHistory user={user} />} />
         <Route path="/leaderboard" element={<Leaderboard />} />

@@ -1,5 +1,6 @@
-INSERT INTO matches (id, team_home, team_away, flag_home_url, flag_away_url, match_time, group_name)
+INSERT INTO public.matches (team_home, team_away, match_time, group_name, flag_home_url, flag_away_url) 
 VALUES 
-  (gen_random_uuid(), 'Česko', 'Slovensko', '/flags/cze.png', '/flags/svk.png', NOW() + interval '1 day', 'A'),
-  (gen_random_uuid(), 'Finsko', 'Švédsko', '/flags/fin.png', '/flags/swe.png', NOW() + interval '2 days', 'B'),
-  (gen_random_uuid(), 'Kanada', 'USA', '/flags/can.png', '/flags/usa.png', NOW() + interval '3 days', 'A');
+    ('Česko', 'Slovensko', '2025-05-10 15:00:00+00', 'A', 'https://flagcdn.com/w80/cz.png', 'https://flagcdn.com/w80/sk.png'),
+    ('Finsko', 'Švédsko', '2025-05-10 19:00:00+00', 'B', 'https://flagcdn.com/w80/fi.png', 'https://flagcdn.com/w80/se.png'),
+    ('Kanada', 'USA', '2025-05-11 15:00:00+00', 'A', 'https://flagcdn.com/w80/ca.png', 'https://flagcdn.com/w80/us.png'),
+    ('Švýcarsko', 'Německo', '2025-05-11 19:00:00+00', 'B', 'https://flagcdn.com/w80/ch.png', 'https://flagcdn.com/w80/de.png');

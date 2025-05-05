@@ -18,6 +18,25 @@ const AdminPanel = () => {
     }
   }, [activeTab]);
 
+  useEffect(() => {
+    const debugAdminAccess = async () => {
+      console.log('Admin status:', {
+        user: user?.id,
+        role: userRole,
+        session: await supabase.auth.getSession()
+      });
+
+      const { data, error } = await supabase
+        .from('matches')
+        .select('*')
+        .limit(1);
+
+      console.log('Test matches query:', { data, error });
+    };
+
+    debugAdminAccess();
+  }, []);
+
   const fetchMatches = async () => {
     try {
       setLoading(true);
