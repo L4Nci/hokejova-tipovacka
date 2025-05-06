@@ -56,10 +56,38 @@ const Dashboard = ({ user }) => {
       <h1 className="text-2xl font-bold mb-6">Hokejová tipovačka MS 2025</h1>
       
       <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-4">Vítejte v hokejové tipovačce</h2>
+        <h2 className="text-lg font-semibold mb-4">Hokeji zdar, tipovací parťáci!</h2>
+       
         <p className="mb-4">
-          Tipujte výsledky zápasů mistrovství světa v hokeji 2025 a soutěžte s ostatními fanoušky.
+        Věřím, že nám tato stránka usnadní zadávání tipů a ukáže naše aktuální pořadí :).
         </p>
+        <p className="mb-4">
+        Stručně k pravidlům:
+        </p>
+
+        <p className="mb-4">
+        • Tipy zadáváme a můžeme měnit nejpozději 5 minut před zahájením zápasu
+        </p>
+        <p className="mb-4">
+        • Tip na celkového vítěze turnaje můžeme zadat nejpozději v pátek 9. 5. do 16:00
+        </p>
+        <p className="mb-4">
+        • Za přesný tip na výsledek zápasu (včetně prodloužení a nájezdů) je 5 bodů
+        </p>
+        <p className="mb-4">
+        • Za správný tip na vítěze zápasu (včetně prodloužení a nájezdů) jsou 2 body
+        </p>
+        <p className="mb-4">
+        • Správný tip na celkového vítěze turnaje je za 10 bodů
+        </p>
+        <p className="mb-4">
+        Díky za vaši účast a hodně štěstí!
+        </p>
+
+        <p className="mb-4">
+        H.
+        </p>
+
         {user ? (
           <Link
             to="/tips"

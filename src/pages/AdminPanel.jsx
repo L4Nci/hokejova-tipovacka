@@ -100,19 +100,21 @@ const AdminPanel = ({ user, userRole }) => { // Přidáme props
     try {
       setSavingResult(prev => ({ ...prev, [matchId]: true }));
       
-      // Aktualizujeme pouze matches tabulku
+      const resultData = {
+        is_finished: true,
+        final_score_home: results[matchId]?.homeScore || 0,
+        final_score_away: results[matchId]?.awayScore || 0
+      };
+
+      // Aktualizace výsledku zápasu
       const { error: matchError } = await supabase
         .from('matches')
-        .update({ 
-          is_finished: true,
-          final_score_home: results[matchId]?.homeScore || 0,
-          final_score_away: results[matchId]?.awayScore || 0
-        })
+        .update(resultData)
         .eq('id', matchId);
 
       if (matchError) throw matchError;
 
-      // Znovu načteme data
+      // Znovu načteme data po úspěšné aktualizaci
       await fetchMatches();
 
     } catch (error) {

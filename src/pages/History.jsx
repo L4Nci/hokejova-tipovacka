@@ -171,11 +171,12 @@ const History = () => {
                 {formatDateTime(match.match_time)}
               </span>
               <div className="flex items-center gap-2">
-                <span className={`px-3 py-1 rounded-full text-sm ${
-                  match.results ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                }`}>
-                  {match.results ? 'Odehráno' : 'Naplánováno'}
-                </span>
+                {/* Zobrazíme "Naplánováno" pouze pokud is_finished je false */}
+                {!match.is_finished && (
+                  <span className="text-sm font-medium px-3 py-1 rounded-full bg-blue-100 text-blue-800">
+                    Naplánováno
+                  </span>
+                )}
                 <span className="bg-gray-100 px-3 py-1 rounded-full text-sm">
                   Skupina {match.group_name}
                 </span>

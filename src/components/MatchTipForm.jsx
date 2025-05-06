@@ -108,38 +108,42 @@ export const MatchTipForm = ({ match, user, existingTip, onTipSaved }) => {
   const canTip = new Date(match.match_time) > new Date(Date.now() + 5 * 60000);
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-6 bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-200">
-      <div className="flex items-center justify-between gap-6">
-        <div className="flex items-center gap-3">
-          <img src={match.flag_home_url} alt={match.team_home} className="w-10 h-7 object-cover rounded shadow" />
-          <span className="font-medium text-lg">{match.team_home}</span>
+    <form onSubmit={handleSubmit} className="flex flex-col space-y-4 w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
+        {/* Team sections with responsive layout */}
+        <div className="flex items-center justify-center sm:justify-start space-x-3">
+          <img src={match.flag_home_url} alt={match.team_home} 
+               className="w-8 h-6 sm:w-10 sm:h-7 object-cover rounded shadow" />
+          <span className="text-sm sm:text-base font-medium">{match.team_home}</span>
         </div>
 
-        <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-lg">
+        {/* Score inputs */}
+        <div className="flex justify-center items-center space-x-4">
           <input
             type="number"
             min="0"
             value={scores.homeScore}
             onChange={(e) => setScores(prev => ({ ...prev, homeScore: e.target.value }))}
-            className="w-16 h-16 text-2xl text-center border-2 border-gray-200 rounded focus:border-hockey-blue focus:ring-2 focus:ring-hockey-blue/50 transition-all duration-200"
+            className="w-14 h-14 md:w-16 md:h-16 text-xl md:text-2xl text-center border-2"
             disabled={!canTip || submitting}
             required
           />
-          <span className="font-bold text-2xl text-gray-600">:</span>
+          <span className="font-bold text-xl md:text-2xl text-gray-600">:</span>
           <input
-            type="number" 
+            type="number"
             min="0"
             value={scores.awayScore}
             onChange={(e) => setScores(prev => ({ ...prev, awayScore: e.target.value }))}
-            className="w-16 h-16 text-2xl text-center border-2 border-gray-200 rounded focus:border-hockey-blue focus:ring-2 focus:ring-hockey-blue/50 transition-all duration-200"
+            className="w-14 h-14 md:w-16 md:h-16 text-xl md:text-2xl text-center border-2"
             disabled={!canTip || submitting}
             required
           />
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="font-medium text-lg">{match.team_away}</span>
-          <img src={match.flag_away_url} alt={match.team_away} className="w-10 h-7 object-cover rounded shadow" />
+        <div className="flex items-center justify-center sm:justify-end space-x-3">
+          <span className="text-sm sm:text-base font-medium">{match.team_away}</span>
+          <img src={match.flag_away_url} alt={match.team_away}
+               className="w-8 h-6 sm:w-10 sm:h-7 object-cover rounded shadow" />
         </div>
       </div>
 

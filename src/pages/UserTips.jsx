@@ -233,19 +233,22 @@ const UserTips = ({ user }) => {
         </div>
       )}
       
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
         {matches.map((match) => (
-          <div key={match.id} className="border rounded-lg p-4">
-            <div className="text-sm text-gray-600 mb-4">
-              {formatDateTime(match.match_time)}
+          <div key={match.id} className="bg-white rounded-lg shadow p-3 sm:p-4">
+            <div className="flex flex-col space-y-4">
+              <div className="text-sm text-gray-600 text-center">
+                {formatDateTime(match.match_time)}
+              </div>
+              
+              <MatchTipForm
+                match={match}
+                user={user}
+                existingTip={tips[match.id]}
+                onTipSaved={() => fetchData()}
+                className="w-full"
+              />
             </div>
-            
-            <MatchTipForm
-              match={match}
-              user={user}
-              existingTip={tips[match.id]}
-              onTipSaved={() => fetchData()}
-            />
           </div>
         ))}
       </div>

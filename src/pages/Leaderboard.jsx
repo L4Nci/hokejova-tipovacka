@@ -107,8 +107,8 @@ const Leaderboard = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Žebříček tipérů</h1>
+    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Žebříček tipérů</h1>
       
       {loading ? (
         <div className="flex justify-center">
@@ -120,45 +120,34 @@ const Leaderboard = () => {
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          <table className="min-w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pořadí</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Uživatel</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider font-bold">Body celkem</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Přesné tipy</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Správní vítězové</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Počet tipů</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <span className="group font-normal">
-                    Průměr/zápas
-                    <div className="absolute hidden group-hover:block bg-black text-white p-2 rounded text-xs -left-1/2 transform -translate-x-1/2 mt-1">
-                      Průměrný počet bodů na odehraný zápas
-                    </div>
-                  </span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {leaderboardData.map((user, index) => (
-                <tr className={`
-                  ${index === 0 ? 'bg-yellow-100 border-l-4 border-yellow-400' : ''}
-                  ${index === 1 ? 'bg-gray-100 border-l-4 border-gray-400' : ''}
-                  ${index === 2 ? 'bg-orange-100 border-l-4 border-orange-400' : ''}
-                `} key={user.user_id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{index + 1}.</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.username}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-bold">{user.total_points}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{user.perfect_tips}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{user.correct_winner_tips}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{user.matches_tipped}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-normal">
-                    {(user.total_points / user.matches_tipped || 0).toFixed(2)}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="min-w-full table-fixed">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="w-12 px-2 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                  <th className="w-1/3 px-2 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jméno</th>
+                  <th className="w-16 px-2 py-2 sm:py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Body</th>
+                  <th className="w-16 px-2 py-2 sm:py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Přesné</th>
+                  <th className="w-16 px-2 py-2 sm:py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Vítěz</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {leaderboardData.map((user, index) => (
+                  <tr className={`
+                    ${index === 0 ? 'bg-yellow-100 border-l-4 border-yellow-400' : ''}
+                    ${index === 1 ? 'bg-gray-100 border-l-4 border-gray-400' : ''}
+                    ${index === 2 ? 'bg-orange-100 border-l-4 border-orange-400' : ''}
+                  `} key={user.user_id}>
+                    <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{index + 1}.</td>
+                    <td className="px-2 py-2 whitespace-nowrap text-sm font-medium text-gray-900 truncate">{user.username}</td>
+                    <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900 text-right font-bold">{user.total_points}</td>
+                    <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900 text-right">{user.perfect_tips}</td>
+                    <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900 text-right">{user.correct_winners}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
