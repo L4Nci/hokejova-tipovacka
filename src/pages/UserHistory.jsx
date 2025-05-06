@@ -16,17 +16,21 @@ const UserHistory = ({ user }) => {
     try {
       setLoading(true);
       
-      console.log('Fetching matches with results...');
-      
       const { data, error } = await supabase
         .from('matches')
         .select(`
           *,
-          results (
-            final_score_home,
-            final_score_away
-          ),
+          final_score_home,
+          final_score_away,
+          is_finished,
+          group_name,
+          team_home,
+          team_away,
+          flag_home_url,
+          flag_away_url,
+          match_time,
           tips (
+            id,
             score_home,
             score_away,
             profiles (username)
@@ -34,14 +38,9 @@ const UserHistory = ({ user }) => {
         `)
         .order('match_time', { ascending: false });
       
-      if (error) {
-        console.error('Error fetching matches:', error);
-        throw error;
-      }
-
-      console.log('Fetched matches:', data);
-      
+      if (error) throw error;
       setMatches(data || []);
+      
     } catch (error) {
       console.error('Error:', error);
       setError('Nepodařilo se načíst zápasy');
@@ -90,9 +89,16 @@ const UserHistory = ({ user }) => {
       <div className="space-y-4">
         {matches.map((match) => (
           <div 
-            key={match.id}  // <-- Toto je důležité
-            className={`bg-white rounded-lg shadow p-6 
-              ${match.isFinished ? 'border-l-4 border-gray-500' : 'border-l-4 border-hockey-blue'}`}
+            key={match.id} 
+            className={`bg-white rounded-lg shadow p-6 ${
+              !match.is_finished
+                ? 'border-l-4 border-yellow-500' // nadcházející zápas
+                : match.final_score_home > match.final_score_away
+                  ? 'border-l-4 border-green-500' // výhra domácích
+                  : match.final_score_home < match.final_score_away
+                    ? 'border-r-4 border-green-500' // výhra hostů
+                    : 'border-x-4 border-gray-400' // remíza
+            }`}
           >
             <div className="flex justify-between items-center mb-4">
               <span className="text-sm text-gray-600">{formatDateTime(match.match_time)}</span>
@@ -113,7 +119,14 @@ const UserHistory = ({ user }) => {
               </div>
               
               <div className="px-6 py-2 bg-gray-50 rounded-lg text-xl font-bold">
-                {match.current_score_home} : {match.current_score_away}
+                {match.is_finished && match.final_score_home !== null ? (
+                  `${match.final_score_home} : ${match.final_score_away}`
+                ) : (
+                  new Date(match.match_time).toLocaleTimeString('cs-CZ', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })
+                )}
               </div>
               
               <div className="flex items-center gap-3">

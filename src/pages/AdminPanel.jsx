@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
-const AdminPanel = () => {
+const AdminPanel = ({ user, userRole }) => { // Přidáme props
   const [activeTab, setActiveTab] = useState('matches');
   const [matches, setMatches] = useState([]);
   const [users, setUsers] = useState([]);
@@ -21,8 +21,8 @@ const AdminPanel = () => {
   useEffect(() => {
     const debugAdminAccess = async () => {
       console.log('Admin status:', {
-        user: user?.id,
-        role: userRole,
+        user: user?.id, // Použijeme předaný user prop
+        role: userRole, // Použijeme předaný userRole prop
         session: await supabase.auth.getSession()
       });
 
@@ -35,7 +35,7 @@ const AdminPanel = () => {
     };
 
     debugAdminAccess();
-  }, []);
+  }, [user, userRole]); // Přidáme závislosti
 
   const fetchMatches = async () => {
     try {
@@ -43,19 +43,17 @@ const AdminPanel = () => {
       
       const { data: matchesData, error: matchesError } = await supabase
         .from('matches')
-        .select('*, results(*)')
+        .select('*')
         .order('match_time', { ascending: true });
       
       if (matchesError) throw matchesError;
       
       const resultsMap = {};
       matchesData.forEach(match => {
-        if (match.results) {
-          resultsMap[match.id] = {
-            homeScore: match.results.final_score_home,
-            awayScore: match.results.final_score_away
-          };
-        }
+        resultsMap[match.id] = {
+          homeScore: match.final_score_home || 0,
+          awayScore: match.final_score_away || 0
+        };
       });
       
       setMatches(matchesData || []);
@@ -102,20 +100,7 @@ const AdminPanel = () => {
     try {
       setSavingResult(prev => ({ ...prev, [matchId]: true }));
       
-      // 1. Uložíme výsledek do results tabulky
-      const { error: resultError } = await supabase
-        .from('results')
-        .upsert({
-          match_id: matchId,
-          final_score_home: results[matchId]?.homeScore || 0,
-          final_score_away: results[matchId]?.awayScore || 0
-        }, {
-          onConflict: 'match_id'
-        });
-
-      if (resultError) throw resultError;
-
-      // updated_at se aktualizuje automaticky díky triggeru
+      // Aktualizujeme pouze matches tabulku
       const { error: matchError } = await supabase
         .from('matches')
         .update({ 
@@ -127,6 +112,7 @@ const AdminPanel = () => {
 
       if (matchError) throw matchError;
 
+      // Znovu načteme data
       await fetchMatches();
 
     } catch (error) {
@@ -146,7 +132,7 @@ const AdminPanel = () => {
       day: '2-digit', 
       month: '2-digit',
       year: 'numeric',
-      hour: '2-digit', 
+      hour: '2-digit',
       minute: '2-digit'
     }).format(date);
   };
@@ -241,7 +227,7 @@ const AdminPanel = () => {
                           : (hasResult ? 'Aktualizovat výsledek' : 'Uložit výsledek')}
                       </button>
                       
-                      {errors[match.id] && (
+                      {errors[match.id] && ( 
                         <div className="mt-2 text-sm text-red-600">{errors[match.id]}</div>
                       )}
                     </td>

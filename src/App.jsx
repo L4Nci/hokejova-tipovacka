@@ -97,7 +97,7 @@ function App() {
           path="/admin" 
           element={
             <AdminRoute user={user} userRole={userRole}>
-              <AdminPanel />
+              <AdminPanel user={user} userRole={userRole} />
             </AdminRoute>
           } 
         />

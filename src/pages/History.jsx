@@ -25,12 +25,29 @@ const History = () => {
     try {
       setLoading(true);
       const { data: matchData, error } = await supabase
-        .from('match_history')  // Použijeme nový view
-        .select('*')
+        .from('match_history')
+        .select(`
+          *,
+          final_score_home,
+          final_score_away,
+          is_finished,
+          group_name,
+          team_home,
+          team_away,
+          flag_home_url,
+          flag_away_url,
+          match_time,
+          tips (
+            id,
+            score_home,
+            score_away,
+            profiles (username)
+          )
+        `)
         .order('match_time', { ascending: false });
       
       if (error) throw error;
-      setMatches(matchData);
+      setMatches(matchData || []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -139,11 +156,11 @@ const History = () => {
           <div 
             key={match.id} 
             className={`bg-white rounded-lg shadow-md p-6 ${
-              !match.results 
+              !match.is_finished 
                 ? 'border-l-4 border-yellow-500' // nadcházející zápas
-                : match.results[0].final_score_home > match.results[0].final_score_away
+                : match.final_score_home > match.final_score_away
                   ? 'border-l-4 border-green-500' // výhra domácích
-                  : match.results[0].final_score_home < match.results[0].final_score_away
+                  : match.final_score_home < match.final_score_away
                     ? 'border-r-4 border-green-500' // výhra hostů
                     : 'border-x-4 border-gray-400' // remíza
             }`}
@@ -207,13 +224,14 @@ const TeamDisplay = ({ team, flag, reverse }) => (
 const ScoreDisplay = ({ match }) => (
   <div className="px-6 py-2 bg-gray-50 rounded-lg">
     <div className="text-xs text-gray-500 text-center mb-1">
-      {match.results ? 'Konečný výsledek' : 'Začátek v'}
+      {match.is_finished ? 'Konečný výsledek' : 'Začátek v'}
     </div>
-    <div className="text-2xl font-bold">
-      {match.results 
-        ? `${match.results[0].final_score_home} : ${match.results[0].final_score_away}`
-        : new Date(match.match_time).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })
-      }
+    <div className="text-2xl font-bold text-center">
+      {match.is_finished && match.final_score_home !== null && match.final_score_away !== null ? (
+        `${match.final_score_home} : ${match.final_score_away}`
+      ) : (
+        new Date(match.match_time).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })
+      )}
     </div>
   </div>
 );
