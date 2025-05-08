@@ -84,7 +84,7 @@ const UserHistory = ({ user }) => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Historie vašich tipů</h1>
+      <h1 className="text-2xl font-bold mb-6">Zápasy</h1>
       
       <div className="space-y-4">
         {matches.map((match) => (
@@ -104,7 +104,7 @@ const UserHistory = ({ user }) => {
               <span className="text-sm text-gray-600">{formatDateTime(match.match_time)}</span>
               <span className={`text-sm font-medium px-3 py-1 rounded-full 
                 ${match.isFinished ? 'bg-gray-100' : 'bg-blue-100'}`}>
-                {match.isFinished ? 'Odehráno' : 'Naplánováno'} • Skupina {match.group_name}
+                 Skupina {match.group_name}
               </span>
             </div>
             
