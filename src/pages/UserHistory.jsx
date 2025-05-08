@@ -35,11 +35,31 @@ const UserHistory = ({ user }) => {
             score_away,
             profiles (username)
           )
-        `)
-        .order('match_time', { ascending: false });
+        `);
       
       if (error) throw error;
-      setMatches(data || []);
+
+      // Sort matches by proximity to current date
+      const now = new Date();
+      const sortedMatches = data.sort((a, b) => {
+        const dateA = new Date(a.match_time);
+        const dateB = new Date(b.match_time);
+        
+        // If both dates are in the future, sort by closest first
+        if (dateA > now && dateB > now) {
+          return dateA - dateB;
+        }
+        
+        // If both dates are in the past, sort by most recent first
+        if (dateA < now && dateB < now) {
+          return dateB - dateA;
+        }
+        
+        // If one is past and one is future, put future first
+        return dateB - dateA;
+      });
+
+      setMatches(sortedMatches || []);
       
     } catch (error) {
       console.error('Error:', error);
