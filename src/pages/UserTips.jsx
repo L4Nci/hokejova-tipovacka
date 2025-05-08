@@ -29,19 +29,13 @@ const UserTips = ({ user }) => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      setError(null); // Reset error state
+      setError(null);
       
-      // Načtení nadcházejících zápasů (do týdne)
-      const currentDate = new Date().toISOString();
-      const oneWeekFromNow = new Date();
-      oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
-      
+      // Odstraníme časové omezení a načteme všechny zápasy
       const { data: matchesData, error: matchesError } = await supabase
         .from('matches')
         .select('*')
-        .gt('match_time', currentDate)
-        .lt('match_time', oneWeekFromNow.toISOString())
-        .order('match_time', { ascending: true });
+        .order('match_time', { ascending: true }); // Seřadíme podle času
       
       if (matchesError) throw matchesError;
 
@@ -58,11 +52,10 @@ const UserTips = ({ user }) => {
           return;
         }
         
-        // Převedení tipů na objekt pro snazší přístup
         const tipsMap = {};
         tipsData?.forEach(tip => {
           tipsMap[tip.match_id] = {
-            id: tip.id,  // Přidáme ID tipu pro pozdější aktualizaci
+            id: tip.id,
             scoreHome: tip.score_home,
             scoreAway: tip.score_away
           };

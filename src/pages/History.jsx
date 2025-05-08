@@ -24,6 +24,9 @@ const History = () => {
   const fetchMatches = async () => {
     try {
       setLoading(true);
+      const currentDate = new Date().toISOString();
+      
+      // Načteme všechny zápasy
       const { data: matchData, error } = await supabase
         .from('match_history')
         .select(`
@@ -43,11 +46,21 @@ const History = () => {
             score_away,
             profiles (username)
           )
-        `)
-        .order('match_time', { ascending: false });
-      
+        `);
+
       if (error) throw error;
-      setMatches(matchData || []);
+
+      // Rozdělíme zápasy na budoucí a minulé
+      const futureMatches = matchData
+        .filter(match => match.match_time > currentDate)
+        .sort((a, b) => new Date(a.match_time) - new Date(b.match_time)); // Vzestupně podle času
+
+      const pastMatches = matchData
+        .filter(match => match.match_time <= currentDate)
+        .sort((a, b) => new Date(b.match_time) - new Date(a.match_time)); // Sestupně podle času
+
+      // Spojíme pole - nejdřív budoucí, pak minulé
+      setMatches([...futureMatches, ...pastMatches]);
     } catch (err) {
       setError(err.message);
     } finally {

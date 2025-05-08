@@ -101,22 +101,44 @@ const AdminPanel = ({ user, userRole }) => { // Přidáme props
       setSavingResult(prev => ({ ...prev, [matchId]: true }));
       
       const resultData = {
-        is_finished: true,
-        final_score_home: results[matchId]?.homeScore || 0,
-        final_score_away: results[matchId]?.awayScore || 0
+        match_id: matchId, // matchId je už UUID
+        final_score_home: parseInt(results[matchId]?.homeScore) || 0,
+        final_score_away: parseInt(results[matchId]?.awayScore) || 0,
+        updated_at: new Date().toISOString()
       };
 
-      // Aktualizace výsledku zápasu
-      const { error: matchError } = await supabase
-        .from('matches')
-        .update(resultData)
-        .eq('id', matchId);
+      // Nejdřív zkontrolujeme existující výsledek
+      const { data: existingResult } = await supabase
+        .from('results')
+        .select('*')
+        .eq('match_id', matchId)
+        .single();
 
-      if (matchError) throw matchError;
+      let error;
+      if (existingResult) {
+        // Update
+        const { error: updateError } = await supabase
+          .from('results')
+          .update({
+            final_score_home: resultData.final_score_home,
+            final_score_away: resultData.final_score_away,
+            updated_at: resultData.updated_at
+          })
+          .eq('match_id', matchId);
+        error = updateError;
+      } else {
+        // Insert
+        const { error: insertError } = await supabase
+          .from('results')
+          .insert([resultData]);
+        error = insertError;
+      }
 
-      // Znovu načteme data po úspěšné aktualizaci
+      if (error) throw error;
+
+      // Refresh data
       await fetchMatches();
-
+      
     } catch (error) {
       console.error('Error saving result:', error);
       setErrors(prev => ({
