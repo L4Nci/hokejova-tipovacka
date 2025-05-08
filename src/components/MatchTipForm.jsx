@@ -3,9 +3,25 @@ import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
 export const MatchTipForm = ({ match, user, existingTip, onTipSaved }) => {
+  // Debug useEffect - přesuneme ho sem dovnitř komponenty
+  useEffect(() => {
+    console.group('🎯 TIP DATA DEBUG');
+    console.log('Existing Tip Object:', existingTip);
+    console.log('Score Home:', {
+      value: existingTip?.scoreHome,
+      type: typeof existingTip?.scoreHome
+    });
+    console.log('Score Away:', {
+      value: existingTip?.scoreAway,
+      type: typeof existingTip?.scoreAway
+    });
+    console.log('Is existingTip defined?', !!existingTip);
+    console.groupEnd();
+  }, [existingTip]);
+
   const [scores, setScores] = useState({
-    homeScore: existingTip?.score_home?.toString() || '',  // Konverze na string
-    awayScore: existingTip?.score_away?.toString() || ''   // Konverze na string
+    homeScore: '',
+    awayScore: ''
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -17,6 +33,7 @@ export const MatchTipForm = ({ match, user, existingTip, onTipSaved }) => {
 
   const fetchTips = async () => {
     try {
+      // Nejdřív načteme data bez .single()
       const { data: tips, error } = await supabase
         .from('tips')
         .select(`
@@ -27,14 +44,20 @@ export const MatchTipForm = ({ match, user, existingTip, onTipSaved }) => {
           profiles (username)
         `)
         .eq('match_id', match.id)
-        .order('created_at', { ascending: false });
+        .eq('user_id', user.id);
         
       if (error) throw error;
       
-      return tips;
+      // Vrátíme první tip, pokud existuje
+      if (tips && tips.length > 0) {
+        console.log('Found existing tip:', tips[0]);
+        return tips[0];
+      }
+      
+      return null;
     } catch (err) {
-      console.error('Chyba při načítání tipů:', err);
-      throw new Error('Nepodařilo se načíst tipy. Zkuste to prosím později.');
+      console.error('Chyba při načítání tipu:', err.message);
+      return null;
     }
   };
 
@@ -54,16 +77,20 @@ export const MatchTipForm = ({ match, user, existingTip, onTipSaved }) => {
     loadTips();
   }, [match.id]);
 
-  const resetScores = () => {
+  // Jeden useEffect pro načtení a debug
+  useEffect(() => {
     if (existingTip) {
-      setScores({
-        homeScore: existingTip.score_home.toString(),
-        awayScore: existingTip.score_away.toString()
+      console.log('DEBUG TIP:', {
+        raw: existingTip,
+        scoreHome: existingTip.scoreHome,
+        scoreAway: existingTip.scoreAway,
+        types: {
+          home: typeof existingTip.scoreHome,
+          away: typeof existingTip.scoreAway
+        }
       });
-    } else {
-      setScores({ homeScore: '', awayScore: '' });
     }
-  };
+  }, [existingTip]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -156,8 +183,9 @@ export const MatchTipForm = ({ match, user, existingTip, onTipSaved }) => {
           type="number"
           min="0"
           value={scores.homeScore}
-          onChange={(e) => setScores(prev => ({ ...prev, homeScore: e.target.value }))}
-          className="w-16 h-16 text-2xl text-center border-2 rounded"
+          placeholder={existingTip?.scoreHome}  // Změněno z score_home na scoreHome
+          onChange={e => setScores(s => ({ ...s, homeScore: e.target.value }))}
+          className="w-16 h-16 text-2xl text-center border-2 rounded placeholder-gray-400"
           disabled={!canTip || submitting}
           required
         />
@@ -166,8 +194,9 @@ export const MatchTipForm = ({ match, user, existingTip, onTipSaved }) => {
           type="number"
           min="0"
           value={scores.awayScore}
-          onChange={(e) => setScores(prev => ({ ...prev, awayScore: e.target.value }))}
-          className="w-16 h-16 text-2xl text-center border-2 rounded"
+          placeholder={existingTip?.scoreAway}  // Změněno z score_away na scoreAway
+          onChange={e => setScores(s => ({ ...s, awayScore: e.target.value }))}
+          className="w-16 h-16 text-2xl text-center border-2 rounded placeholder-gray-400"
           disabled={!canTip || submitting}
           required
         />
@@ -209,7 +238,7 @@ export const MatchTipForm = ({ match, user, existingTip, onTipSaved }) => {
             ? <span className="flex items-center">
                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
                 Ukládám...
               </span>
