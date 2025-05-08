@@ -56,53 +56,49 @@ const Dashboard = ({ user }) => {
       <h1 className="text-2xl font-bold mb-6">Hokejová tipovačka MS 2025</h1>
       
       <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-4">Hokeji zdar, tipovací parťáci! 🏒🥅</h2>
-        
-        <p className="mb-6">
-          Věřím, že nám tato stránka usnadní zadávání tipů a přehledně ukáže aktuální pořadí.
+        <h2 className="text-lg font-semibold mb-4">Hokeji zdar, tipovací parťáci!</h2>
+       
+        <p className="mb-4">
+        Věřím, že nám tato stránka usnadní zadávání tipů a ukáže naše aktuální pořadí :).
         </p>
-
-        <div className="mb-6">
-          <h3 className="font-semibold mb-2">📌 Stručně k pravidlům:</h3>
-          <p className="mb-4">
-            Tipy na zápasy zadáváme a můžeme měnit nejpozději 5 minut před zahájením zápasu.
-          </p>
-          <p className="mb-4">
-            Tip na celkového vítěze turnaje lze zadat nejpozději v pátek 9. 5. do 16:00.
-          </p>
-          <p className="text-lg font-semibold mb-6">
-            Vítěz bere 800 Kč! 💰🔥
-          </p>
-        </div>
-
-        <div className="mb-6">
-          <h3 className="font-semibold mb-3">🏅 Bodování:</h3>
-          <ul className="space-y-2">
-            <li>Přesný tip na výsledek zápasu (včetně prodloužení a nájezdů): 5 bodů</li>
-            <li>Správný tip na vítěze zápasu (včetně prodloužení a nájezdů): 2 body</li>
-            <li>Správný tip na celkového vítěze turnaje: 10 bodů</li>
-          </ul>
-        </div>
+        <p className="mb-4">
+        Stručně k pravidlům:
+        </p>
 
         <p className="mb-4">
-          Díky za vaši účast a hodně štěstí! 🍀
+        • Tipy zadáváme a můžeme měnit nejpozději 5 minut před zahájením zápasu
+        </p>
+        <p className="mb-4">
+        • Tip na celkového vítěze turnaje můžeme zadat nejpozději v pátek 9. 5. do 16:00
+        </p>
+        <p className="mb-4">
+        • Za přesný tip na výsledek zápasu (včetně prodloužení a nájezdů) je 5 bodů
+        </p>
+        <p className="mb-4">
+        • Za správný tip na vítěze zápasu (včetně prodloužení a nájezdů) jsou 2 body
+        </p>
+        <p className="mb-4">
+        • Správný tip na celkového vítěze turnaje je za 10 bodů
+        </p>
+        <p className="mb-4">
+        Díky za vaši účast a hodně štěstí!
         </p>
 
-        <p className="text-right italic">
-          H.
+        <p className="mb-4">
+        H.
         </p>
 
         {user ? (
           <Link
             to="/tips"
-            className="inline-block mt-4 bg-hockey-blue text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors"
+            className="bg-hockey-blue text-white px-4 py-2 rounded hover:bg-blue-700"
           >
             Začít tipovat
           </Link>
         ) : (
           <Link
             to="/login"
-            className="inline-block mt-4 bg-hockey-blue text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors"
+            className="bg-hockey-blue text-white px-4 py-2 rounded hover:bg-blue-700"
           >
             Přihlásit se pro tipování
           </Link>

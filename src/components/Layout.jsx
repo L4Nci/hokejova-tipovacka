@@ -36,9 +36,9 @@ const Layout = ({ children, user }) => {
           <div className="flex justify-between items-center py-3">
             <Link to="/" className="text-xl font-bold">MS Hokej 2025</Link>
             
-            {/* Hamburger menu pro mobily */}
+            {/* Upravené horní hamburger tlačítko */}
             <button 
-              className="md:hidden p-2"
+              className="md:hidden p-2 rounded-lg hover:bg-blue-700 transition-colors z-50"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -79,39 +79,75 @@ const Layout = ({ children, user }) => {
         </div>
       </header>
 
-      {/* Mobilní menu */}
-      <div className={`md:hidden ${isMobileMenuOpen ? 'block' : 'hidden'} bg-hockey-blue text-white`}>
-        <div className="px-4 py-2 space-y-2">
-          <Link to="/" className="block py-2 hover:bg-blue-700 px-3 rounded" onClick={() => setIsMobileMenuOpen(false)}>Domů</Link>
-          <Link to="/tips" className="block py-2 hover:bg-blue-700 px-3 rounded" onClick={() => setIsMobileMenuOpen(false)}>Tipovat</Link>
-          <Link to="/leaderboard" className="block py-2 hover:bg-blue-700 px-3 rounded" onClick={() => setIsMobileMenuOpen(false)}>Žebříček</Link>
-          {user && (
-            <>
-              <Link to="/history" className="block py-2 hover:bg-blue-700 px-3 rounded" onClick={() => setIsMobileMenuOpen(false)}>Zápasy</Link>
-              {userRole === 'admin' && (
-                <Link to="/admin" className="block py-2 bg-red-600 hover:bg-red-700 px-3 rounded" onClick={() => setIsMobileMenuOpen(false)}>
-                  Admin
-                </Link>
-              )}
-            </>
-          )}
-          {user ? (
+      {/* Vysouvací menu z pravé strany - přidáme fixed positioning */}
+      <div 
+        className={`
+          md:hidden fixed top-0 right-0 h-full w-64 bg-hockey-blue text-white 
+          transform transition-transform duration-300 ease-in-out z-[1000]
+          overflow-y-auto shadow-xl
+          ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}
+        `}
+        style={{ maxHeight: '100vh' }}
+      >
+        {/* Přidáme bezpečný padding pro mobilní zařízení */}
+        <div className="pt-safe pb-safe px-4 min-h-screen flex flex-col">
+          {/* Header menu */}
+          <div className="sticky top-0 pt-4 pb-2 bg-hockey-blue z-10">
             <button 
-              onClick={() => {
-                handleLogout();
-                setIsMobileMenuOpen(false);
-              }}
-              className="block w-full text-left py-2 hover:bg-blue-700 px-3 rounded"
+              className="absolute right-4 p-2 rounded-lg hover:bg-blue-700"
+              onClick={() => setIsMobileMenuOpen(false)}
             >
-              Odhlásit
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
-          ) : (
-            <Link to="/login" className="block py-2 hover:bg-blue-700 px-3 rounded" onClick={() => setIsMobileMenuOpen(false)}>
-              Přihlásit
-            </Link>
-          )}
+          </div>
+
+          {/* Menu items - přidáme větší padding a spacing pro lepší touch targets */}
+          <nav className="space-y-1 mt-16">
+            <Link to="/" className="block py-2 hover:bg-blue-700 px-3 rounded" onClick={() => setIsMobileMenuOpen(false)}>Domů</Link>
+            <Link to="/tips" className="block py-2 hover:bg-blue-700 px-3 rounded" onClick={() => setIsMobileMenuOpen(false)}>Tipovat</Link>
+            <Link to="/leaderboard" className="block py-2 hover:bg-blue-700 px-3 rounded" onClick={() => setIsMobileMenuOpen(false)}>Žebříček</Link>
+            {user && (
+              <>
+                <Link to="/history" className="block py-2 hover:bg-blue-700 px-3 rounded" onClick={() => setIsMobileMenuOpen(false)}>Zápasy</Link>
+                {userRole === 'admin' && (
+                  <Link 
+                    to="/admin" 
+                    className="block w-full py-2 bg-red-600 hover:bg-red-700 px-3 rounded text-left"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Admin
+                  </Link>
+                )}
+              </>
+            )}
+            {user ? (
+              <button 
+                onClick={() => {
+                  handleLogout();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="block w-full text-left py-2 hover:bg-blue-700 px-3 rounded"
+              >
+                Odhlásit
+              </button>
+            ) : (
+              <Link to="/login" className="block py-2 hover:bg-blue-700 px-3 rounded" onClick={() => setIsMobileMenuOpen(false)}>
+                Přihlásit
+              </Link>
+            )}
+          </nav>
         </div>
       </div>
+
+      {/* Overlay pro zavření menu - zvýšíme z-index */}
+      {isMobileMenuOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-[999]"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
 
       <main className="flex-1 container mx-auto py-4 px-3 md:py-6 md:px-4 max-w-7xl">
         {children}

@@ -4,13 +4,14 @@ import { useNavigate } from 'react-router-dom';
 
 export const MatchTipForm = ({ match, user, existingTip, onTipSaved }) => {
   const [scores, setScores] = useState({
-    homeScore: existingTip?.score_home || '',
-    awayScore: existingTip?.score_away || ''
+    homeScore: existingTip?.score_home?.toString() || '',  // Konverze na string
+    awayScore: existingTip?.score_away?.toString() || ''   // Konverze na string
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [tips, setTips] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const navigate = useNavigate();
 
@@ -52,6 +53,17 @@ export const MatchTipForm = ({ match, user, existingTip, onTipSaved }) => {
   useEffect(() => {
     loadTips();
   }, [match.id]);
+
+  const resetScores = () => {
+    if (existingTip) {
+      setScores({
+        homeScore: existingTip.score_home.toString(),
+        awayScore: existingTip.score_away.toString()
+      });
+    } else {
+      setScores({ homeScore: '', awayScore: '' });
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -95,9 +107,15 @@ export const MatchTipForm = ({ match, user, existingTip, onTipSaved }) => {
 
       if (result.error) throw result.error;
       
+      setSuccess(true);
+      if (!existingTip) {
+        setScores({ homeScore: '', awayScore: '' }); // Vyčistíme jen pokud to byl nový tip
+      }
       onTipSaved?.();
       
-      navigate('/history');
+      setTimeout(() => {
+        setSuccess(false);
+      }, 3000);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -109,47 +127,61 @@ export const MatchTipForm = ({ match, user, existingTip, onTipSaved }) => {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col space-y-4 w-full">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
-        {/* Team sections with responsive layout */}
-        <div className="flex items-center justify-center sm:justify-start space-x-3">
-          <img src={match.flag_home_url} alt={match.team_home} 
-               className="w-8 h-6 sm:w-10 sm:h-7 object-cover rounded shadow" />
-          <span className="text-sm sm:text-base font-medium">{match.team_home}</span>
+      {/* Teams layout - vertikální uspořádání */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* Domácí tým */}
+        <div className="flex flex-col items-center space-y-2">
+          <img 
+            src={match.flag_home_url} 
+            alt={match.team_home} 
+            className="w-12 h-8 object-cover rounded shadow" 
+          />
+          <span className="font-medium text-center">{match.team_home}</span>
         </div>
 
-        {/* Score inputs */}
-        <div className="flex justify-center items-center space-x-4">
-          <input
-            type="number"
-            min="0"
-            value={scores.homeScore}
-            onChange={(e) => setScores(prev => ({ ...prev, homeScore: e.target.value }))}
-            className="w-14 h-14 md:w-16 md:h-16 text-xl md:text-2xl text-center border-2"
-            disabled={!canTip || submitting}
-            required
+        {/* Hostující tým */}
+        <div className="flex flex-col items-center space-y-2">
+          <img 
+            src={match.flag_away_url} 
+            alt={match.team_away} 
+            className="w-12 h-8 object-cover rounded shadow" 
           />
-          <span className="font-bold text-xl md:text-2xl text-gray-600">:</span>
-          <input
-            type="number"
-            min="0"
-            value={scores.awayScore}
-            onChange={(e) => setScores(prev => ({ ...prev, awayScore: e.target.value }))}
-            className="w-14 h-14 md:w-16 md:h-16 text-xl md:text-2xl text-center border-2"
-            disabled={!canTip || submitting}
-            required
-          />
+          <span className="font-medium text-center">{match.team_away}</span>
         </div>
+      </div>
 
-        <div className="flex items-center justify-center sm:justify-end space-x-3">
-          <span className="text-sm sm:text-base font-medium">{match.team_away}</span>
-          <img src={match.flag_away_url} alt={match.team_away}
-               className="w-8 h-6 sm:w-10 sm:h-7 object-cover rounded shadow" />
-        </div>
+      {/* Score inputs */}
+      <div className="flex justify-center items-center space-x-4">
+        <input
+          type="number"
+          min="0"
+          value={scores.homeScore}
+          onChange={(e) => setScores(prev => ({ ...prev, homeScore: e.target.value }))}
+          className="w-16 h-16 text-2xl text-center border-2 rounded"
+          disabled={!canTip || submitting}
+          required
+        />
+        <span className="font-bold text-2xl text-gray-600">:</span>
+        <input
+          type="number"
+          min="0"
+          value={scores.awayScore}
+          onChange={(e) => setScores(prev => ({ ...prev, awayScore: e.target.value }))}
+          className="w-16 h-16 text-2xl text-center border-2 rounded"
+          disabled={!canTip || submitting}
+          required
+        />
       </div>
 
       {error && (
         <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
           <p className="text-red-700">{error}</p>
+        </div>
+      )}
+
+      {success && (
+        <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded">
+          <p className="text-green-700">Tip byl úspěšně uložen!</p>
         </div>
       )}
 

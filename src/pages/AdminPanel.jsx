@@ -170,104 +170,173 @@ const AdminPanel = ({ user, userRole }) => { // Přidáme props
       <>
         <h2 className="text-xl font-semibold mb-4">Správa zápasů a výsledků</h2>
         
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Zápas
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Datum a čas
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Skupina
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Výsledek
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Akce
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {matches.map(match => {
-                const resultData = results[match.id] || { homeScore: 0, awayScore: 0 };
-                const hasResult = !!match.results;
+        {/* Změna z tabulky na karty pro mobilní zobrazení */}
+        <div className="lg:hidden space-y-4">
+          {matches.map(match => (
+            <div key={match.id} className="bg-white rounded-lg shadow p-4">
+              <div className="flex flex-col space-y-4">
+                {/* Datum a skupina */}
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>{formatDateTime(match.match_time)}</span>
+                  <span>Skupina {match.group_name}</span>
+                </div>
                 
-                return (
-                  <tr key={match.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          {match.flag_home_url && <img src={match.flag_home_url} alt={match.team_home} className="h-5 w-8 mr-2" />}
-                          <span>{match.team_home}</span>
+                {/* Týmy a vlajky */}
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center space-x-2">
+                    <img src={match.flag_home_url} alt={match.team_home} className="h-5 w-8" />
+                    <span>{match.team_home}</span>
+                  </div>
+                  <span>vs</span>
+                  <div className="flex items-center space-x-2">
+                    <span>{match.team_away}</span>
+                    <img src={match.flag_away_url} alt={match.team_away} className="h-5 w-8" />
+                  </div>
+                </div>
+                
+                {/* Skóre inputy */}
+                <div className="flex justify-center items-center space-x-4">
+                  <input
+                    type="number"
+                    min="0"
+                    max="99"
+                    value={results[match.id]?.homeScore || 0}
+                    onChange={(e) => handleResultChange(match.id, 'home', e.target.value)}
+                    className="w-16 h-12 text-center border rounded text-lg"
+                  />
+                  <span className="text-xl font-bold">:</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="99"
+                    value={results[match.id]?.awayScore || 0}
+                    onChange={(e) => handleResultChange(match.id, 'away', e.target.value)}
+                    className="w-16 h-12 text-center border rounded text-lg"
+                  />
+                </div>
+                
+                {/* Tlačítko uložit */}
+                <div className="flex justify-center">
+                  <button
+                    onClick={() => saveResult(match.id)}
+                    disabled={savingResult[match.id]}
+                    className="w-full px-4 py-2 bg-hockey-blue text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {savingResult[match.id] ? 'Ukládám...' : 'Uložit výsledek'}
+                  </button>
+                </div>
+                
+                {errors[match.id] && (
+                  <div className="text-red-500 text-sm text-center">
+                    {errors[match.id]}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Původní tabulka pro desktop */}
+        <div className="hidden lg:block">
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Zápas
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Datum a čas
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Skupina
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Výsledek
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Akce
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {matches.map(match => {
+                  const resultData = results[match.id] || { homeScore: 0, awayScore: 0 };
+                  const hasResult = !!match.results;
+                  
+                  return (
+                    <tr key={match.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            {match.flag_home_url && <img src={match.flag_home_url} alt={match.team_home} className="h-5 w-8 mr-2" />}
+                            <span>{match.team_home}</span>
+                          </div>
+                          <span className="mx-2">vs</span>
+                          <div className="flex items-center">
+                            <span>{match.team_away}</span>
+                            {match.flag_away_url && <img src={match.flag_away_url} alt={match.team_away} className="h-5 w-8 ml-2" />}
+                          </div>
                         </div>
-                        <span className="mx-2">vs</span>
-                        <div className="flex items-center">
-                          <span>{match.team_away}</span>
-                          {match.flag_away_url && <img src={match.flag_away_url} alt={match.team_away} className="h-5 w-8 ml-2" />}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {formatDateTime(match.match_time)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {match.group_name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="number"
+                            min="0"
+                            max="99"
+                            value={resultData.homeScore}
+                            onChange={(e) => handleResultChange(match.id, 'home', e.target.value)}
+                            className="w-12 p-1 text-center border rounded"
+                          />
+                          <span className="text-xl">:</span>
+                          <input
+                            type="number"
+                            min="0"
+                            max="99"
+                            value={resultData.awayScore}
+                            onChange={(e) => handleResultChange(match.id, 'away', e.target.value)}
+                            className="w-12 p-1 text-center border rounded"
+                          />
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {formatDateTime(match.match_time)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {match.group_name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="number"
-                          min="0"
-                          max="99"
-                          value={resultData.homeScore}
-                          onChange={(e) => handleResultChange(match.id, 'home', e.target.value)}
-                          className="w-12 p-1 text-center border rounded"
-                        />
-                        <span className="text-xl">:</span>
-                        <input
-                          type="number"
-                          min="0"
-                          max="99"
-                          value={resultData.awayScore}
-                          onChange={(e) => handleResultChange(match.id, 'away', e.target.value)}
-                          className="w-12 p-1 text-center border rounded"
-                        />
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <button
-                        onClick={() => saveResult(match.id)}
-                        disabled={savingResult[match.id]}
-                        className={`px-4 py-1 rounded font-medium text-white ${
-                          hasResult ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'
-                        } disabled:opacity-50`}
-                      >
-                        {savingResult[match.id] 
-                          ? 'Ukládání...' 
-                          : (hasResult ? 'Aktualizovat výsledek' : 'Uložit výsledek')}
-                      </button>
-                      
-                      {errors[match.id] && ( 
-                        <div className="mt-2 text-sm text-red-600">{errors[match.id]}</div>
-                      )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => saveResult(match.id)}
+                          disabled={savingResult[match.id]}
+                          className={`px-4 py-1 rounded font-medium text-white ${
+                            hasResult ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'
+                          } disabled:opacity-50`}
+                        >
+                          {savingResult[match.id] 
+                            ? 'Ukládání...' 
+                            : (hasResult ? 'Aktualizovat výsledek' : 'Uložit výsledek')}
+                        </button>
+                        
+                        {errors[match.id] && ( 
+                          <div className="mt-2 text-sm text-red-600">{errors[match.id]}</div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+                
+                {matches.length === 0 && (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                      Žádné zápasy k zobrazení.
                     </td>
                   </tr>
-                );
-              })}
-              
-              {matches.length === 0 && (
-                <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
-                    Žádné zápasy k zobrazení.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </>
     );
