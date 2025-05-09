@@ -197,10 +197,16 @@ const History = () => {
             </div>
 
             {/* Výsledek/stav zápasu */}
-            <div className="flex items-center justify-between mb-4">
-              <TeamDisplay team={match.team_home} flag={match.flag_home_url} />
-              <ScoreDisplay match={match} />
-              <TeamDisplay team={match.team_away} flag={match.flag_away_url} reverse />
+            <div className="flex items-center justify-between gap-4 mb-4">
+              <div className="flex-shrink-0 w-[150px]">
+                <TeamDisplay team={match.team_home} flag={match.flag_home_url} />
+              </div>
+              <div className="flex-shrink-0">
+                <ScoreDisplay match={match} />
+              </div>
+              <div className="flex-shrink-0 w-[150px]">
+                <TeamDisplay team={match.team_away} flag={match.flag_away_url} reverse />
+              </div>
             </div>
 
             {/* Přidat statistiky zápasu */}
@@ -229,26 +235,52 @@ const History = () => {
 
 // Pomocné komponenty
 const TeamDisplay = ({ team, flag, reverse }) => (
-  <div className={`flex items-center gap-3 ${reverse ? 'flex-row-reverse' : ''}`}>
-    <img src={flag} alt={team} className="w-10 h-7 object-cover rounded shadow" />
-    <span className="font-medium">{team}</span>
+  <div className={`flex items-center gap-3 min-w-[150px] ${reverse ? 'flex-row-reverse justify-end' : ''}`}>
+    <img src={flag} alt={team} className="w-10 h-7 object-cover rounded shadow flex-shrink-0" />
+    <span className="font-medium truncate">{team}</span>
   </div>
 );
 
-const ScoreDisplay = ({ match }) => (
-  <div className="px-6 py-2 bg-gray-50 rounded-lg">
-    <div className="text-xs text-gray-500 text-center mb-1">
-      {match.is_finished ? 'Konečný výsledek' : 'Začátek v'}
-    </div>
-    <div className="text-2xl font-bold text-center">
-      {match.is_finished && match.final_score_home !== null && match.final_score_away !== null ? (
-        `${match.final_score_home} : ${match.final_score_away}`
-      ) : (
-        new Date(match.match_time).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })
-      )}
+const TimeOrScoreBox = ({ content }) => (
+  <div className="inline-flex items-center justify-center bg-gray-50 rounded-lg px-4 py-2">
+    <div className="flex items-center space-x-2 min-w-[100px]">
+      <div className="w-10 text-right">
+        <span className="inline-block text-xl font-bold leading-none">
+          {content.split(':')[0].trim()}
+        </span>
+      </div>
+      <div className="w-4 text-center">
+        <span className="inline-block text-xl font-bold leading-none">:</span>
+      </div>
+      <div className="w-10 text-left">
+        <span className="inline-block text-xl font-bold leading-none">
+          {content.split(':')[1].trim()}
+        </span>
+      </div>
     </div>
   </div>
 );
+
+const ScoreDisplay = ({ match }) => {
+  const timeString = new Date(match.match_time)
+    .toLocaleTimeString('cs-CZ', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+
+  const content = match.is_finished 
+    ? `${match.final_score_home}:${match.final_score_away}`
+    : timeString;
+
+  return (
+    <div className="flex-none text-center">
+      <div className="text-xs text-gray-500 mb-1">
+        {match.is_finished ? 'Konečný výsledek' : 'Začátek v'}
+      </div>
+      <TimeOrScoreBox content={content} />
+    </div>
+  );
+};
 
 const TipsSection = ({ match }) => (
   <div className="mt-4 pt-4 border-t border-gray-100">
@@ -258,9 +290,9 @@ const TipsSection = ({ match }) => (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
       {match.tips.map(tip => (
         <div key={tip.id} className={`p-2 rounded border ${getTipStyle(tip, match)}`}>
-          <div className="flex justify-between items-center">
-            <span className="text-sm">{tip.profiles.username}</span>
-            <span className="font-medium">{tip.score_home}:{tip.score_away}</span>
+          <div className="flex justify-between items-center gap-4">
+            <span className="text-sm flex-shrink-0">{tip.profiles.username}</span>
+            <TimeOrScoreBox content={`${tip.score_home} : ${tip.score_away}`} />
           </div>
         </div>
       ))}

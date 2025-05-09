@@ -177,24 +177,24 @@ export const MatchTipForm = ({ match, user, existingTip, onTipSaved }) => {
         </div>
       </div>
 
-      {/* Score inputs */}
-      <div className="flex justify-center items-center space-x-4">
+      {/* Skóre input - upraveno pro mobilní zařízení */}
+      <div className="flex justify-center items-center space-x-4 whitespace-nowrap min-w-max">
         <input
           type="number"
           min="0"
           value={scores.homeScore}
-          placeholder={existingTip?.scoreHome}  // Změněno z score_home na scoreHome
+          placeholder={existingTip?.scoreHome}
           onChange={e => setScores(s => ({ ...s, homeScore: e.target.value }))}
           className="w-16 h-16 text-2xl text-center border-2 rounded placeholder-gray-400"
           disabled={!canTip || submitting}
           required
         />
-        <span className="font-bold text-2xl text-gray-600">:</span>
+        <span className="font-bold text-2xl text-gray-600 inline-block">:</span>
         <input
           type="number"
           min="0"
           value={scores.awayScore}
-          placeholder={existingTip?.scoreAway}  // Změněno z score_away na scoreAway
+          placeholder={existingTip?.scoreAway}
           onChange={e => setScores(s => ({ ...s, awayScore: e.target.value }))}
           className="w-16 h-16 text-2xl text-center border-2 rounded placeholder-gray-400"
           disabled={!canTip || submitting}
