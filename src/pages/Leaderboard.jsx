@@ -6,6 +6,17 @@ const Leaderboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const teamFlags = {
+    CZE: 'https://flagcdn.com/w40/cz.png',
+    SVK: 'https://flagcdn.com/w40/sk.png',
+    USA: 'https://flagcdn.com/w40/us.png',
+    CAN: 'https://flagcdn.com/w40/ca.png',
+    FIN: 'https://flagcdn.com/w40/fi.png',
+    SWE: 'https://flagcdn.com/w40/se.png',
+    LAT: 'https://flagcdn.com/w40/lv.png',
+    KAZ: 'https://flagcdn.com/w40/kz.png'
+  };
+
   useEffect(() => {
     fetchLeaderboard();
   }, []);
@@ -18,8 +29,15 @@ const Leaderboard = () => {
       // Nejdřív zkusíme načíst data přímo z view
       const { data: viewData, error: viewError } = await supabase
         .from('leaderboard')
-        .select('*')
+        .select(`
+          *,
+          profiles (
+            favorite_team
+          )
+        `)
         .order('total_points', { ascending: false });
+
+      console.log('Fetched data:', viewData); // Pro debug
 
       if (viewError) {
         console.error('Error fetching from view:', viewError);
@@ -34,7 +52,8 @@ const Leaderboard = () => {
             user_id,
             profiles!inner (
               id,
-              username
+              username,
+              favorite_team
             ),
             matches!inner (
               id,
@@ -65,6 +84,7 @@ const Leaderboard = () => {
             userPoints[tip.user_id] = {
               user_id: tip.user_id,
               username: tip.profiles.username,
+              favorite_team: tip.profiles.favorite_team,
               total_points: 0,
               perfect_tips: 0,
               correct_winner_tips: 0,
@@ -87,7 +107,13 @@ const Leaderboard = () => {
 
         setLeaderboardData(leaderboardArray);
       } else {
-        setLeaderboardData(viewData);
+        // Upravíme data před uložením do state
+        const processedData = viewData.map(user => ({
+          ...user,
+          favorite_team: user.profiles?.favorite_team
+        }));
+        console.log('Processed data:', processedData); // Pro debug
+        setLeaderboardData(processedData);
       }
     } catch (err) {
       console.error('Error:', err);
@@ -139,7 +165,16 @@ const Leaderboard = () => {
                     ${index === 2 ? 'bg-orange-100 border-l-4 border-orange-400' : ''}
                   `} key={user.user_id}>
                     <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{index + 1}.</td>
-                    <td className="px-2 py-2 whitespace-nowrap text-sm font-medium text-gray-900 truncate">{user.username}</td>
+                    <td className="px-2 py-2 whitespace-nowrap text-sm font-medium text-gray-900 truncate">
+                      {user.username}
+                      {user.favorite_team && (
+                        <img 
+                          src={teamFlags[user.favorite_team]} 
+                          alt={user.favorite_team}
+                          className="inline-block ml-2 h-4 w-6 object-cover"
+                        />
+                      )}
+                    </td>
                     <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900 text-right font-bold">{user.total_points}</td>
                     <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900 text-right">{user.perfect_tips}</td>
                     <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900 text-right">{user.correct_winners}</td>
