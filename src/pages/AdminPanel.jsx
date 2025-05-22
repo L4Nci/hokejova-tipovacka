@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
-const AdminPanel = ({ user, userRole }) => { // Přidáme props
+const AdminPanel = ({ user, userRole }) => {
   const [activeTab, setActiveTab] = useState('matches');
   const [matches, setMatches] = useState([]);
   const [users, setUsers] = useState([]);
@@ -9,6 +9,7 @@ const AdminPanel = ({ user, userRole }) => { // Přidáme props
   const [loading, setLoading] = useState(true);
   const [savingResult, setSavingResult] = useState({});
   const [errors, setErrors] = useState({});
+  const [selectedGroup, setSelectedGroup] = useState('all');
 
   useEffect(() => {
     if (activeTab === 'matches') {
@@ -21,8 +22,8 @@ const AdminPanel = ({ user, userRole }) => { // Přidáme props
   useEffect(() => {
     const debugAdminAccess = async () => {
       console.log('Admin status:', {
-        user: user?.id, // Použijeme předaný user prop
-        role: userRole, // Použijeme předaný userRole prop
+        user: user?.id,
+        role: userRole,
         session: await supabase.auth.getSession()
       });
 
@@ -35,7 +36,7 @@ const AdminPanel = ({ user, userRole }) => { // Přidáme props
     };
 
     debugAdminAccess();
-  }, [user, userRole]); // Přidáme závislosti
+  }, [user, userRole]);
 
   const fetchMatches = async () => {
     try {
@@ -100,47 +101,28 @@ const AdminPanel = ({ user, userRole }) => { // Přidáme props
     try {
       setSavingResult(prev => ({ ...prev, [matchId]: true }));
       
-      const resultData = {
-        match_id: matchId, // matchId je už UUID
-        final_score_home: parseInt(results[matchId]?.homeScore) || 0,
-        final_score_away: parseInt(results[matchId]?.awayScore) || 0,
-        updated_at: new Date().toISOString()
-      };
+      const scoreHome = parseInt(results[matchId]?.homeScore) || 0;
+      const scoreAway = parseInt(results[matchId]?.awayScore) || 0;
+      const now = new Date().toISOString();
 
-      // Nejdřív zkontrolujeme existující výsledek
-      const { data: existingResult } = await supabase
-        .from('results')
-        .select('*')
-        .eq('match_id', matchId)
-        .single();
+      // Update matches
+      const { error: matchError } = await supabase
+        .from('matches')
+        .update({
+          final_score_home: scoreHome,
+          final_score_away: scoreAway,
+          is_finished: true,
+          updated_at: now
+        })
+        .eq('id', matchId);
 
-      let error;
-      if (existingResult) {
-        // Update
-        const { error: updateError } = await supabase
-          .from('results')
-          .update({
-            final_score_home: resultData.final_score_home,
-            final_score_away: resultData.final_score_away,
-            updated_at: resultData.updated_at
-          })
-          .eq('match_id', matchId);
-        error = updateError;
-      } else {
-        // Insert
-        const { error: insertError } = await supabase
-          .from('results')
-          .insert([resultData]);
-        error = insertError;
-      }
+      if (matchError) throw matchError;
 
-      if (error) throw error;
-
-      // Refresh data
+      // Obnovíme data
       await fetchMatches();
       
     } catch (error) {
-      console.error('Error saving result:', error);
+      console.error('Save operation failed:', error);
       setErrors(prev => ({
         ...prev,
         [matchId]: `Chyba při ukládání: ${error.message}`
@@ -161,6 +143,38 @@ const AdminPanel = ({ user, userRole }) => { // Přidáme props
     }).format(date);
   };
 
+  const filteredMatches = matches.filter(match => 
+    selectedGroup === 'all' || match.group_name === selectedGroup
+  );
+
+  const renderGroupButtons = () => (
+    <div className="mb-4 flex gap-2">
+      <button
+        onClick={() => setSelectedGroup('all')}
+        className={`px-4 py-2 rounded ${
+          selectedGroup === 'all' 
+            ? 'bg-hockey-blue text-white' 
+            : 'bg-gray-200 hover:bg-gray-300'
+        }`}
+      >
+        Všechny zápasy
+      </button>
+      {['A', 'B', 'Semifinále'].map(group => (
+        <button
+          key={group}
+          onClick={() => setSelectedGroup(group)}
+          className={`px-4 py-2 rounded ${
+            selectedGroup === group 
+              ? 'bg-hockey-blue text-white' 
+              : 'bg-gray-200 hover:bg-gray-300'
+          }`}
+        >
+          {group}
+        </button>
+      ))}
+    </div>
+  );
+
   const renderMatchesTab = () => {
     if (loading) {
       return <div className="text-center py-10">Načítání zápasů...</div>;
@@ -170,18 +184,17 @@ const AdminPanel = ({ user, userRole }) => { // Přidáme props
       <>
         <h2 className="text-xl font-semibold mb-4">Správa zápasů a výsledků</h2>
         
-        {/* Změna z tabulky na karty pro mobilní zobrazení */}
+        {renderGroupButtons()}
+
         <div className="lg:hidden space-y-4">
-          {matches.map(match => (
+          {filteredMatches.map(match => (
             <div key={match.id} className="bg-white rounded-lg shadow p-4">
               <div className="flex flex-col space-y-4">
-                {/* Datum a skupina */}
                 <div className="flex justify-between text-sm text-gray-600">
                   <span>{formatDateTime(match.match_time)}</span>
                   <span>Skupina {match.group_name}</span>
                 </div>
                 
-                {/* Týmy a vlajky */}
                 <div className="flex justify-between items-center">
                   <div className="flex items-center space-x-2">
                     <img src={match.flag_home_url} alt={match.team_home} className="h-5 w-8" />
@@ -194,7 +207,6 @@ const AdminPanel = ({ user, userRole }) => { // Přidáme props
                   </div>
                 </div>
                 
-                {/* Skóre inputy */}
                 <div className="flex justify-center items-center space-x-4">
                   <input
                     type="number"
@@ -215,7 +227,6 @@ const AdminPanel = ({ user, userRole }) => { // Přidáme props
                   />
                 </div>
                 
-                {/* Tlačítko uložit */}
                 <div className="flex justify-center">
                   <button
                     onClick={() => saveResult(match.id)}
@@ -236,7 +247,6 @@ const AdminPanel = ({ user, userRole }) => { // Přidáme props
           ))}
         </div>
 
-        {/* Původní tabulka pro desktop */}
         <div className="hidden lg:block">
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
@@ -260,7 +270,7 @@ const AdminPanel = ({ user, userRole }) => { // Přidáme props
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {matches.map(match => {
+                {filteredMatches.map(match => {
                   const resultData = results[match.id] || { homeScore: 0, awayScore: 0 };
                   const hasResult = !!match.results;
                   
@@ -327,7 +337,7 @@ const AdminPanel = ({ user, userRole }) => { // Přidáme props
                   );
                 })}
                 
-                {matches.length === 0 && (
+                {filteredMatches.length === 0 && (
                   <tr>
                     <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
                       Žádné zápasy k zobrazení.

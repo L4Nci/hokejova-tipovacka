@@ -109,6 +109,35 @@ const History = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-6">Historie zápasů</h1>
+      
+      {/* Přidáme tlačítka pro filtrování */}
+      <div className="mb-6 flex gap-2 flex-wrap">
+        <button
+          onClick={() => setSelectedGroup('all')}
+          className={`px-4 py-2 rounded ${
+            selectedGroup === 'all' 
+              ? 'bg-hockey-blue text-white' 
+              : 'bg-gray-200 hover:bg-gray-300'
+          }`}
+        >
+          Všechny zápasy
+        </button>
+        {['A', 'B', 'Semifinále'].map(group => (
+          <button
+            key={group}
+            onClick={() => setSelectedGroup(group)}
+            className={`px-4 py-2 rounded ${
+              selectedGroup === group 
+                ? 'bg-hockey-blue text-white' 
+                : 'bg-gray-200 hover:bg-gray-300'
+            }`}
+          >
+            Skupina {group}
+          </button>
+        ))}
+      </div>
+
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Historie zápasů</h1>
         

@@ -5,6 +5,7 @@ const UserHistory = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [matches, setMatches] = useState([]);
+  const [selectedGroup, setSelectedGroup] = useState('all');
 
   useEffect(() => {
     if (user) {
@@ -79,6 +80,10 @@ const UserHistory = ({ user }) => {
     }).format(date);
   };
 
+  const filteredMatches = matches.filter(match => 
+    selectedGroup === 'all' || match.group_name === selectedGroup
+  );
+
   if (loading) {
     return (
       <div className="flex justify-center py-8">
@@ -106,8 +111,35 @@ const UserHistory = ({ user }) => {
     <div className="max-w-4xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Zápasy</h1>
       
+      {/* Přidáme tlačítka pro filtrování */}
+      <div className="mb-6 flex gap-2 flex-wrap">
+        <button
+          onClick={() => setSelectedGroup('all')}
+          className={`px-4 py-2 rounded ${
+            selectedGroup === 'all' 
+              ? 'bg-hockey-blue text-white' 
+              : 'bg-gray-200 hover:bg-gray-300'
+          }`}
+        >
+          Všechny zápasy
+        </button>
+        {['A', 'B', 'Semifinále'].map(group => (
+          <button
+            key={group}
+            onClick={() => setSelectedGroup(group)}
+            className={`px-4 py-2 rounded ${
+              selectedGroup === group 
+                ? 'bg-hockey-blue text-white' 
+                : 'bg-gray-200 hover:bg-gray-300'
+            }`}
+          >
+            Skupina {group}
+          </button>
+        ))}
+      </div>
+
       <div className="space-y-4">
-        {matches.map((match) => (
+        {filteredMatches.map((match) => (
           <div 
             key={match.id} 
             className={`bg-white rounded-lg shadow p-6 ${

@@ -12,6 +12,7 @@ const UserTips = ({ user }) => {
   const [success, setSuccess] = useState({});
   const [currentTime, setCurrentTime] = useState(new Date());
   const [error, setError] = useState(null);
+  const [selectedGroup, setSelectedGroup] = useState('all'); // Přidáme state pro filtr
 
   // Aktualizace aktuálního času každou sekundu pro odpočet
   useEffect(() => {
@@ -190,6 +191,40 @@ const UserTips = ({ user }) => {
     }
   };
 
+  // Přidáme filtrování zápasů
+  const filteredMatches = matches.filter(match => 
+    selectedGroup === 'all' || match.group_name === selectedGroup
+  );
+
+  // Přidáme komponentu pro tlačítka filtrů
+  const renderGroupButtons = () => (
+    <div className="mb-6 flex gap-2 flex-wrap">
+      <button
+        onClick={() => setSelectedGroup('all')}
+        className={`px-4 py-2 rounded ${
+          selectedGroup === 'all' 
+            ? 'bg-hockey-blue text-white' 
+            : 'bg-gray-200 hover:bg-gray-300'
+        }`}
+      >
+        Všechny zápasy
+      </button>
+      {['A', 'B', 'Semifinále'].map(group => (
+        <button
+          key={group}
+          onClick={() => setSelectedGroup(group)}
+          className={`px-4 py-2 rounded ${
+            selectedGroup === group 
+              ? 'bg-hockey-blue text-white' 
+              : 'bg-gray-200 hover:bg-gray-300'
+          }`}
+        >
+          Skupina {group}
+        </button>
+      ))}
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="flex justify-center py-10">
@@ -225,9 +260,12 @@ const UserTips = ({ user }) => {
           <Link to="/login" className="text-blue-600 hover:underline">Přihlásit se</Link>
         </div>
       )}
+
+      {/* Přidáme filtr skupin */}
+      {renderGroupButtons()}
       
       <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
-        {matches.map((match) => (
+        {filteredMatches.map((match) => (
           <div key={match.id} className="bg-white rounded-lg shadow p-3 sm:p-4">
             <div className="flex flex-col space-y-4">
               <div className="text-sm text-gray-600 text-center">
